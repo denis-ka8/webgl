@@ -315,10 +315,6 @@ const main = async () => {
 
   const camera = new GLCamera();
   const cameraController = new CameraController(camera);
-  cameraController.on("move", function(position) {
-    console.log("Camera position:", position);
-    drawScene();
-  });
   cameraController.listen();
 
   // look up where the vertex data needs to go.
@@ -345,11 +341,9 @@ const main = async () => {
   var cameraAngleRadians = MathConverter.degreesToRadians(0);
   const cameraFOV = MathConverter.degreesToRadians(camera.fov);
 
-
-  drawScene();
-
   // Draw the scene.
   function drawScene() {
+    console.log("draw");
     // webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
     // Tell WebGL how to convert from clip space to pixels
@@ -437,7 +431,11 @@ const main = async () => {
       var count = 16 * 6;
       gl.drawArrays(primitiveType, offset, count);
     }
+
+    requestAnimationFrame(drawScene);
   }
+
+  requestAnimationFrame(drawScene);
 };
 
 export { main };

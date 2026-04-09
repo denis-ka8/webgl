@@ -3,6 +3,8 @@ class EventEmitter {
 	this.events = {};
   }
 
+  destructor() {}
+
   on(eventName, callback) {
 	if (!this.events[eventName]) {
 	  this.events[eventName] = [];
