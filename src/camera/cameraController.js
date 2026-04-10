@@ -114,7 +114,6 @@ class CameraController extends EventEmitter {
 		};
 		this._camera.xAngle = this._startAngleX - newCoordinates.x * this._rotateSpeed;
 		this._camera.yAngle = this._startAngleY - newCoordinates.y * this._rotateSpeed;
-		console.log(this._camera.xAngle, this._camera.yAngle);
 	}
 
 	_mouseDownHandler(event) {
