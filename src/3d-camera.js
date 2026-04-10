@@ -314,7 +314,7 @@ const main = async () => {
 	const program = glProgram.create();
 
   const camera = new GLCamera();
-  const cameraController = new CameraController(camera);
+  const cameraController = new CameraController(camera, gl);
   cameraController.listen();
 
   // look up where the vertex data needs to go.
@@ -338,12 +338,11 @@ const main = async () => {
   // Put geometry data into buffer
   setColors(gl);
 
-  var cameraAngleRadians = MathConverter.degreesToRadians(0);
   const cameraFOV = MathConverter.degreesToRadians(camera.fov);
 
   // Draw the scene.
   function drawScene() {
-    console.log("draw");
+    // console.log("draw");
     // webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
     // Tell WebGL how to convert from clip space to pixels
@@ -403,9 +402,12 @@ const main = async () => {
     var projectionMatrix = m4.perspective(cameraFOV, camera.aspect, camera.near, camera.far);
 
     // Compute a matrix for the camera
-    // var cameraMatrix = m4.yRotation(cameraAngleRadians);
-    var cameraMatrix = m4.translation(camera.position.x*100, camera.position.y*100, camera.position.z*100);
-    cameraMatrix = m4.translate(cameraMatrix, 0, 0, radius * 1.5);
+    const xRotation = m4.xRotation(MathConverter.degreesToRadians(camera.yAngle));
+    const yRotation = m4.yRotation(MathConverter.degreesToRadians(camera.xAngle));
+    let cameraMatrix = m4.translation(camera.position.x, camera.position.y, camera.position.z);
+    cameraMatrix = m4.translate(cameraMatrix, 0, 0, radius * 3.5);
+    cameraMatrix = m4.multiply(cameraMatrix, yRotation);
+    cameraMatrix = m4.multiply(cameraMatrix, xRotation);
 
     // Make a view matrix from the camera matrix
     var viewMatrix = m4.inverse(cameraMatrix);

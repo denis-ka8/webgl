@@ -35,7 +35,17 @@ class Vec3 extends Vec {
 		);
 	}
 
-	// TODO: copy method
+	copy() {
+		return new Vec3(this.x, this.y, this.z);
+	}
+
+	add(v) {
+		return new Vec3(this.x + v.x, this.y + v.y, this.z + v.z);
+	}
+
+	scale(value) {
+		return new Vec3(this.x * value, this.y * value, this.z * value);
+	}
 
 	// TODO: add methods for vector operations (add, subtract, dot product, cross product, etc.)
 }

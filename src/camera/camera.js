@@ -1,4 +1,5 @@
 import { vec3 } from "../math/vec3";
+import MathConverter from "../math/converter";
 
 class GLCamera {
 
@@ -8,6 +9,8 @@ class GLCamera {
 	_aspect = 1;
 	_near = 0.1;
 	_far = 10000;
+	_xAngle = 0;
+	_yAngle = 0;
 
 	constructor(options = {}) {
 		this._position = options.position || this._position;
@@ -16,6 +19,8 @@ class GLCamera {
 		this._aspect = options.aspect || this._aspect;
 		this._near = options.near || this._near;
 		this._far = options.far || this._far;
+		this._xAngle = options.xAngle || this._xAngle;
+		this._yAngle = options.yAngle || this._yAngle;
 	}
 
 	get position() { return this._position; }
@@ -46,6 +51,79 @@ class GLCamera {
 	get far() { return this._far; }
 	set far(value) {
 		this._far = value;
+	}
+
+	get xAngle() { return this._xAngle; }
+	set xAngle(value) {
+		this._xAngle = this._normalizeAngle(value);
+	}
+
+	get yAngle() { return this._yAngle; }
+	set yAngle(value) {
+		this._yAngle = Math.max(-89, Math.min(89, this._normalizeAngle(value)));
+	}
+
+	/*
+	get viewMatrix() {
+		const cosX = Math.cos(this._xAngle);
+		const sinX = Math.sin(this._xAngle);
+		const cosY = Math.cos(this._yAngle);
+		const sinY = Math.sin(this._yAngle);
+
+		const x = this._position[0] - this._target[0];
+		const y = this._position[1] - this._target[1];
+		const z = this._position[2] - this._target[2];
+
+		return [
+			cosY, 0, -sinY, 0,
+			sinX * sinY, cosX, sinX * cosY, 0,
+			cosX * sinY, -sinX, cosX * cosY, 0,
+			-cosY * x + sinY * z, -sinX * sinY * x - cosX * y - sinX * cosY * z, cosY * z + sinY * x, 1
+		];
+	}
+
+	get projectionMatrix() {
+		const f = 1 / Math.tan(this._fov * Math.PI / 360);
+		const nf = 1 / (this._near - this._far);
+
+		return [
+			f / this._aspect, 0, 0, 0,
+			0, f, 0, 0,
+			0, 0, (this._far + this._near) * nf, -1,
+			0, 0, (2 * this._far * this._near) * nf, 0
+		];
+	}
+	*/
+
+	getForwardVector() {
+		const cosX = Math.cos(MathConverter.degreesToRadians(this._xAngle));
+		const sinX = Math.sin(MathConverter.degreesToRadians(this._xAngle));
+		const cosY = Math.cos(MathConverter.degreesToRadians(this._yAngle));
+		const sinY = Math.sin(MathConverter.degreesToRadians(this._yAngle));
+
+		return vec3(
+			sinX * cosY,
+			-sinY,
+			cosX * cosY
+		);
+	}
+
+	getRightVector() {
+		const cosX = Math.cos(MathConverter.degreesToRadians(this._xAngle));
+		const sinX = Math.sin(MathConverter.degreesToRadians(this._xAngle));
+
+		return vec3(
+			cosX,
+			0,
+			-sinX
+		);
+	}
+
+	_normalizeAngle(angle) {
+		angle = angle % 360;
+		if (angle < -180) angle += 360;
+		if (angle > 180) angle -= 360;
+		return angle;
 	}
 }
 
