@@ -47,6 +47,10 @@ class Vec3 extends Vec {
 		return new Vec3(this.x * value, this.y * value, this.z * value);
 	}
 
+	dot(v) {
+		return this.x * v.x + this.y * v.y + this.z * v.z;
+	}
+
 	// TODO: add methods for vector operations (add, subtract, dot product, cross product, etc.)
 }
 

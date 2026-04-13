@@ -4,6 +4,22 @@ class GLGeometry extends GLResource {
 
 	constructor(options = {}) {
 		super(options);
+
+		this._vertexCount = 0;
+		this._indices = [];
+		this._indicesCount = 0;
+	}
+
+	get vertexCount() {
+		return this._vertexCount;
+	}
+
+	get indices() {
+		return this._indices;
+	}
+
+	get indicesCount() {
+		return this._indicesCount;
 	}
 
 	create(source) {
@@ -17,6 +33,7 @@ class GLGeometry extends GLResource {
 			console.error("GLGeometry::create()\n\tFailed to parse geometry source");
 			return null;
 		}
+		return arrayBuffer;
 
 		// this._saveBinFile("geometry.bin", arrayBuffer);
 
@@ -38,18 +55,17 @@ class GLGeometry extends GLResource {
 		}
 
 		const lines = source.split("\n");
-		// console.log(lines);
 
 		const vertices = [];
 		const normals = [];
 		const texCoords = [];
-		const faces = [];
+		const vertexMap = new Map();
+		const finalVertices = [];
+		const indices = [];
+		let nextIndex = 0;
 
-		const arrayBuffer = [];
-		
 		for (const line of lines) {
-			console.log(line);
-			const [ command, ...values ] = line.split(" ", 4);
+			const [command, ...values] = line.trim().split(/\s+/, 4);
 			if (command === "v") {
 				const x = parseFloat(values[0]);
 				const y = parseFloat(values[1]);
@@ -66,35 +82,31 @@ class GLGeometry extends GLResource {
 				texCoords.push(u, v);
 			} else if (command === "f") {
 				for (const group of values) {
-					const [ vertexIndex, texCoordIndex, normalIndex ] = group.split("/").map(str => parseFloat(str));
-					faces.push(vertexIndex, texCoordIndex, normalIndex);
-
-					arrayBuffer.push(vertices[vertexIndex - 1]);
-					arrayBuffer.push(texCoords[texCoordIndex - 1]);
-					arrayBuffer.push(normals[normalIndex - 1]);
+					const [vertexIndex, texCoordIndex, normalIndex] = group.split("/").map(Number);
+					const key = `${vertexIndex}/${texCoordIndex}/${normalIndex}`;
+					let index = vertexMap.get(key);
+					if (index === undefined) {
+						const vOffset = (vertexIndex - 1) * 3;
+						const uvOffset = (texCoordIndex - 1) * 2;
+						const nOffset = (normalIndex - 1) * 3;
+						finalVertices.push(
+							vertices[vOffset], vertices[vOffset + 1], vertices[vOffset + 2],
+							texCoords[uvOffset], texCoords[uvOffset + 1],
+							normals[nOffset], normals[nOffset + 1], normals[nOffset + 2]
+						);
+						index = nextIndex++;
+						vertexMap.set(key, index);
+					}
+					indices.push(index);
 				}
 			}
-
-
-				// const parts = line.split(" ");
-				// const p1 = parts[1].split("/");
-				// // console.log(parseFloat(p1[0]), parseFloat(p1[1]), parseFloat(p1[2]))
-				// faces.push(parseFloat(p1[0]), parseFloat(p1[1]), parseFloat(p1[2]));
-				// const p2 = parts[2].split("/");
-				// // console.log(parseFloat(p2[0]), parseFloat(p2[1]), parseFloat(p2[2]))
-				// faces.push(parseFloat(p2[0]), parseFloat(p2[1]), parseFloat(p2[2]));
-				// const p3 = parts[3].split("/");
-				// // console.log(parseFloat(p3[0]), parseFloat(p3[1]), parseFloat(p3[2]))
-				// faces.push(parseFloat(p3[0]), parseFloat(p3[1]), parseFloat(p3[2]));
 		}
 
-		console.log(vertices);
-		console.log(texCoords);
-		console.log(normals);
-		// console.log(faces);
-		console.log(arrayBuffer);
+		this._vertexCount = nextIndex;
+		this._indices = new Uint16Array(indices);
+		this._indicesCount = indices.length;
 
-		return new Float32Array(arrayBuffer).buffer;
+		return new Float32Array(finalVertices).buffer;
 	}
 
 	_saveBinFile(filename, arrayBuffer) {

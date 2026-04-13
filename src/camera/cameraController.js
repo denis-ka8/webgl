@@ -8,7 +8,7 @@ class CameraController extends EventEmitter {
 
 	_camera = null; // GLCamera
 	_glContext = null; // WebGL context
-	_cameraSpeed = 1000;
+	_cameraSpeed = 100;
 	_rotateSpeed = 0.5;
 	_keysPressed = {};
 	_isMoving = false;
@@ -82,8 +82,8 @@ class CameraController extends EventEmitter {
 		if (this._keysPressed['KeyS']) movement = movement.add(forward.scale(speed));
 		if (this._keysPressed['KeyA']) movement = movement.add(right.scale(-speed));
 		if (this._keysPressed['KeyD']) movement = movement.add(right.scale(speed));
-		if (this._keysPressed['KeyQ']) movement = movement.add(vec3(0, speed, 0));
-		if (this._keysPressed['KeyE']) movement = movement.add(vec3(0, -speed, 0));
+		if (this._keysPressed['KeyQ']) movement = movement.add(vec3(0, -speed, 0));
+		if (this._keysPressed['KeyE']) movement = movement.add(vec3(0, speed, 0));
 
 		this._camera.position = newPosition.add(movement);
 

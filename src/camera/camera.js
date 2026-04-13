@@ -1,3 +1,4 @@
+import { m4 } from "../math/m4"; // TODO: remove
 import { vec3 } from "../math/vec3";
 import MathConverter from "../math/converter";
 
@@ -11,6 +12,8 @@ class GLCamera {
 	_far = 10000;
 	_xAngle = 0;
 	_yAngle = 0;
+	_xAngleRad = 0;
+	_yAngleRad = 0;
 
 	constructor(options = {}) {
 		this._position = options.position || this._position;
@@ -21,6 +24,8 @@ class GLCamera {
 		this._far = options.far || this._far;
 		this._xAngle = options.xAngle || this._xAngle;
 		this._yAngle = options.yAngle || this._yAngle;
+		this._xAngleRad = MathConverter.degreesToRadians(this._xAngle);
+		this._yAngleRad = MathConverter.degreesToRadians(this._yAngle);
 	}
 
 	get position() { return this._position; }
@@ -56,33 +61,33 @@ class GLCamera {
 	get xAngle() { return this._xAngle; }
 	set xAngle(value) {
 		this._xAngle = this._normalizeAngle(value);
+		this._xAngleRad = MathConverter.degreesToRadians(this._xAngle);
 	}
 
 	get yAngle() { return this._yAngle; }
 	set yAngle(value) {
 		this._yAngle = Math.max(-89, Math.min(89, this._normalizeAngle(value)));
+		this._yAngleRad = MathConverter.degreesToRadians(this._yAngle);
 	}
 
-	/*
-	get viewMatrix() {
-		const cosX = Math.cos(this._xAngle);
-		const sinX = Math.sin(this._xAngle);
-		const cosY = Math.cos(this._yAngle);
-		const sinY = Math.sin(this._yAngle);
+	getViewMatrix() {
+		const forward = this.getForwardVector();
+		const right = this.getRightVector();
+		const up = this.getUpVector();
 
-		const x = this._position[0] - this._target[0];
-		const y = this._position[1] - this._target[1];
-		const z = this._position[2] - this._target[2];
+		const x = -right.dot(this._position);
+		const y = -up.dot(this._position);
+		const z = -forward.dot(this._position);
 
 		return [
-			cosY, 0, -sinY, 0,
-			sinX * sinY, cosX, sinX * cosY, 0,
-			cosX * sinY, -sinX, cosX * cosY, 0,
-			-cosY * x + sinY * z, -sinX * sinY * x - cosX * y - sinX * cosY * z, cosY * z + sinY * x, 1
+			right.x, up.x, forward.x, 0,
+			right.y, up.y, forward.y, 0,
+			right.z, up.z, forward.z, 0,
+			x,       y,    z,         1
 		];
 	}
 
-	get projectionMatrix() {
+	getProjectionMatrix() {
 		const f = 1 / Math.tan(this._fov * Math.PI / 360);
 		const nf = 1 / (this._near - this._far);
 
@@ -93,13 +98,16 @@ class GLCamera {
 			0, 0, (2 * this._far * this._near) * nf, 0
 		];
 	}
-	*/
+
+	getViewProjectionMatrix() {
+		return m4.multiply(this.getProjectionMatrix(), this.getViewMatrix());
+	}
 
 	getForwardVector() {
-		const cosX = Math.cos(MathConverter.degreesToRadians(this._xAngle));
-		const sinX = Math.sin(MathConverter.degreesToRadians(this._xAngle));
-		const cosY = Math.cos(MathConverter.degreesToRadians(this._yAngle));
-		const sinY = Math.sin(MathConverter.degreesToRadians(this._yAngle));
+		const cosX = Math.cos(this._xAngleRad);
+		const sinX = Math.sin(this._xAngleRad);
+		const cosY = Math.cos(this._yAngleRad);
+		const sinY = Math.sin(this._yAngleRad);
 
 		return vec3(
 			sinX * cosY,
@@ -109,13 +117,26 @@ class GLCamera {
 	}
 
 	getRightVector() {
-		const cosX = Math.cos(MathConverter.degreesToRadians(this._xAngle));
-		const sinX = Math.sin(MathConverter.degreesToRadians(this._xAngle));
+		const cosX = Math.cos(this._xAngleRad);
+		const sinX = Math.sin(this._xAngleRad);
 
 		return vec3(
 			cosX,
 			0,
 			-sinX
+		);
+	}
+
+	getUpVector() {
+		const cosX = Math.cos(this._xAngleRad);
+		const sinX = Math.sin(this._xAngleRad);
+		const cosY = Math.cos(this._yAngleRad);
+		const sinY = Math.sin(this._yAngleRad);
+
+		return vec3(
+			sinX * sinY,
+			cosY,
+			cosX * sinY
 		);
 	}
 

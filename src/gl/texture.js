@@ -1,3 +1,5 @@
+import GLResource from "./resource";
+
 class GLTexture extends GLResource {
 
 	_glContext = null;

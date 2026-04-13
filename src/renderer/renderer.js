@@ -1,58 +1,362 @@
-class Renderer {
+import GLRenderer from "./glRenderer"
+import GLProgram from "../gl/program"
+import GLShader from "../gl/shader";
+import GLCamera from "../camera/camera";
+import CameraController from "../camera/cameraController";
+import { m4 } from "../math/m4";
+import { vec3 } from "../math/vec3"
 
-	_glContext = null;
+class Renderer extends GLRenderer {
 
-	constructor(glContext) {
-		this._glContext = glContext;
+	constructor(canvas, options={}) {
+		super(canvas, options);
 	}
 
-	_resizeCanvasToDisplaySize(canvas, multiplier) {
-		multiplier = multiplier || 1;
-		const width  = canvas.clientWidth  * multiplier | 0;
-		const height = canvas.clientHeight * multiplier | 0;
-		if (canvas.width !== width ||  canvas.height !== height) {
-			canvas.width  = width;
-			canvas.height = height;
-			return true;
-		}
-		return false;
-	}
-
-	draw() {
+	async _initResources() {
 		const gl = this._glContext;
-		this._resizeCanvasToDisplaySize(gl.canvas);
 
-		// Tell WebGL how to convert from clip space to pixels
-		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+		// Create shaders
+		const vsResource = new GLShader({ glContext: gl, shaderType: gl.VERTEX_SHADER });
+		const vsSource = await vsResource.fetchFromUrl('./assets/shaders/test.vs');
+		const vertexShader = vsResource.create(vsSource);
 
-		// Clear the canvas
-		gl.clearColor(0, 0, 0, 0);
-		gl.clear(gl.COLOR_BUFFER_BIT);
+		const fsResource = new GLShader({ glContext: gl, shaderType: gl.FRAGMENT_SHADER });
+		const fsSource = await fsResource.fetchFromUrl('./assets/shaders/test.fs');
+		const fragmentShader = fsResource.create(fsSource);
 
-		// Tell it to use our program (pair of shaders)
-		gl.useProgram(program);
+		// Create program
+		const glProgram = new GLProgram({ glContext: gl, vertexShader, fragmentShader });
+		this._program = glProgram.create();
 
-		// Turn on the attribute
-		gl.enableVertexAttribArray(positionAttributeLocation);
+		// Create camera and controller
+		this._camera = new GLCamera({
+			position: vec3(0, 0, 200),
+			aspect: gl.canvas.clientWidth / gl.canvas.clientHeight,
+		});
+		const cameraController = new CameraController(this._camera, gl);
+		cameraController.listen();
 
-		// Bind the position buffer.
-		gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+		this._positionLocation = gl.getAttribLocation(this._program, "a_position");
+		this._colorLocation = gl.getAttribLocation(this._program, "a_color");
+		this._matrixLocation = gl.getUniformLocation(this._program, "u_matrix");
 
-		// Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-		var size = 2;          // 2 components per iteration
-		var type = gl.FLOAT;   // the data is 32bit floats
-		var normalize = false; // don't normalize the data
-		var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-		var offset = 0;        // start at the beginning of the buffer
-		gl.vertexAttribPointer(
-			positionAttributeLocation, size, type, normalize, stride, offset);
+		this._positionBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this._positionBuffer);
+		this._setGeometry(gl);
 
-		// draw
-		var primitiveType = gl.TRIANGLES;
-		var offset = 0;
-		var count = 3;
-		gl.drawArrays(primitiveType, offset, count);
+		this._colorBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this._colorBuffer);
+		this._setColors(gl);
 	}
+
+	// TODO: load geometry data from external source
+	_setGeometry(gl) {
+		const positions = new Float32Array([
+			// left column front
+			0,   0,  0,
+			0, 150,  0,
+			30,   0,  0,
+			0, 150,  0,
+			30, 150,  0,
+			30,   0,  0,
+
+			// top rung front
+			30,   0,  0,
+			30,  30,  0,
+			100,   0,  0,
+			30,  30,  0,
+			100,  30,  0,
+			100,   0,  0,
+
+			// middle rung front
+			30,  60,  0,
+			30,  90,  0,
+			67,  60,  0,
+			30,  90,  0,
+			67,  90,  0,
+			67,  60,  0,
+
+			// left column back
+			0,   0,  30,
+			30,   0,  30,
+			0, 150,  30,
+			0, 150,  30,
+			30,   0,  30,
+			30, 150,  30,
+
+			// top rung back
+			30,   0,  30,
+			100,   0,  30,
+			30,  30,  30,
+			30,  30,  30,
+			100,   0,  30,
+			100,  30,  30,
+
+			// middle rung back
+			30,  60,  30,
+			67,  60,  30,
+			30,  90,  30,
+			30,  90,  30,
+			67,  60,  30,
+			67,  90,  30,
+
+			// top
+			0,   0,   0,
+			100,   0,   0,
+			100,   0,  30,
+			0,   0,   0,
+			100,   0,  30,
+			0,   0,  30,
+
+			// top rung right
+			100,   0,   0,
+			100,  30,   0,
+			100,  30,  30,
+			100,   0,   0,
+			100,  30,  30,
+			100,   0,  30,
+
+			// under top rung
+			30,   30,   0,
+			30,   30,  30,
+			100,  30,  30,
+			30,   30,   0,
+			100,  30,  30,
+			100,  30,   0,
+
+			// between top rung and middle
+			30,   30,   0,
+			30,   60,  30,
+			30,   30,  30,
+			30,   30,   0,
+			30,   60,   0,
+			30,   60,  30,
+
+			// top of middle rung
+			30,   60,   0,
+			67,   60,  30,
+			30,   60,  30,
+			30,   60,   0,
+			67,   60,   0,
+			67,   60,  30,
+
+			// right of middle rung
+			67,   60,   0,
+			67,   90,  30,
+			67,   60,  30,
+			67,   60,   0,
+			67,   90,   0,
+			67,   90,  30,
+
+			// bottom of middle rung.
+			30,   90,   0,
+			30,   90,  30,
+			67,   90,  30,
+			30,   90,   0,
+			67,   90,  30,
+			67,   90,   0,
+
+			// right of bottom
+			30,   90,   0,
+			30,  150,  30,
+			30,   90,  30,
+			30,   90,   0,
+			30,  150,   0,
+			30,  150,  30,
+
+			// bottom
+			0,   150,   0,
+			0,   150,  30,
+			30,  150,  30,
+			0,   150,   0,
+			30,  150,  30,
+			30,  150,   0,
+
+			// left side
+			0,   0,   0,
+			0,   0,  30,
+			0, 150,  30,
+			0,   0,   0,
+			0, 150,  30,
+			0, 150,   0
+		]);
+
+		let matrix = m4.xRotation(Math.PI);
+		matrix = m4.translate(matrix, -50, -75, -15);
+
+		for (let ii = 0; ii < positions.length; ii += 3) {
+			const vector = m4.vectorMultiply([positions[ii + 0], positions[ii + 1], positions[ii + 2], 1], matrix);
+			positions[ii + 0] = vector[0];
+			positions[ii + 1] = vector[1];
+			positions[ii + 2] = vector[2];
+		}
+
+		gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+	}
+
+	// TODO: load color data from external source
+	_setColors(gl) {
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			new Uint8Array([
+				// left column front
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+
+				// top rung front
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+
+				// middle rung front
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+				200,  70, 120,
+
+				// left column back
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+
+				// top rung back
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+
+				// middle rung back
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+				80, 70, 200,
+
+				// top
+				70, 200, 210,
+				70, 200, 210,
+				70, 200, 210,
+				70, 200, 210,
+				70, 200, 210,
+				70, 200, 210,
+
+				// top rung right
+				200, 200, 70,
+				200, 200, 70,
+				200, 200, 70,
+				200, 200, 70,
+				200, 200, 70,
+				200, 200, 70,
+
+				// under top rung
+				210, 100, 70,
+				210, 100, 70,
+				210, 100, 70,
+				210, 100, 70,
+				210, 100, 70,
+				210, 100, 70,
+
+				// between top rung and middle
+				210, 160, 70,
+				210, 160, 70,
+				210, 160, 70,
+				210, 160, 70,
+				210, 160, 70,
+				210, 160, 70,
+
+				// top of middle rung
+				70, 180, 210,
+				70, 180, 210,
+				70, 180, 210,
+				70, 180, 210,
+				70, 180, 210,
+				70, 180, 210,
+
+				// right of middle rung
+				100, 70, 210,
+				100, 70, 210,
+				100, 70, 210,
+				100, 70, 210,
+				100, 70, 210,
+				100, 70, 210,
+
+				// bottom of middle rung.
+				76, 210, 100,
+				76, 210, 100,
+				76, 210, 100,
+				76, 210, 100,
+				76, 210, 100,
+				76, 210, 100,
+
+				// right of bottom
+				140, 210, 80,
+				140, 210, 80,
+				140, 210, 80,
+				140, 210, 80,
+				140, 210, 80,
+				140, 210, 80,
+
+				// bottom
+				90, 130, 110,
+				90, 130, 110,
+				90, 130, 110,
+				90, 130, 110,
+				90, 130, 110,
+				90, 130, 110,
+
+				// left side
+				160, 160, 220,
+				160, 160, 220,
+				160, 160, 220,
+				160, 160, 220,
+				160, 160, 220,
+				160, 160, 220
+			]),
+			gl.STATIC_DRAW
+		);
+	}
+
+	render() {
+		// TODO: realize resource ready state and render only when resources are loaded
+		if (!this._camera) return; // Resources not initialized yet
+
+		const gl = this._glContext;
+
+		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+		super.render();
+		gl.enable(gl.CULL_FACE);
+		gl.enable(gl.DEPTH_TEST);
+
+		gl.useProgram(this._program);
+
+		gl.enableVertexAttribArray(this._positionLocation);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this._positionBuffer);
+		gl.vertexAttribPointer(this._positionLocation, 3, gl.FLOAT, false, 0, 0);
+
+		gl.enableVertexAttribArray(this._colorLocation);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this._colorBuffer);
+		gl.vertexAttribPointer(this._colorLocation, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+
+		gl.uniformMatrix4fv(this._matrixLocation, false, this._camera.getViewProjectionMatrix());
+
+		gl.drawArrays(gl.TRIANGLES, 0, 16 * 6);
+	}
+
 }
 
 export default Renderer;
