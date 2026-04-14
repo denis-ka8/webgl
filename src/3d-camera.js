@@ -1,13 +1,17 @@
-// import Renderer from "./renderer/renderer";
-import CubeRenderer from "./renderer/cubeRenderer";
+import SceneManager from "./scene/sceneManager";
 
 const main = async () => {
 	const canvas = document.querySelector("#canvas");
 	if (!canvas) return;
 
-	// const renderer = new Renderer(canvas);
-	const renderer = new CubeRenderer(canvas);
-	renderer.startAnimation();
+	const sceneManager = new SceneManager(canvas);
+	sceneManager.initialize();
+	sceneManager.start();
+
+	window.addEventListener('resize', () => {
+		sceneManager.resize(window.innerWidth, window.innerHeight);
+	});
+	sceneManager.resize(window.innerWidth, window.innerHeight);
 };
 
 export { main };

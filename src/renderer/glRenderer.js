@@ -1,16 +1,14 @@
 class GLRenderer {
-	constructor(canvas, options = {}) {
-		this._canvas = canvas;
-		this._glContext = canvas.getContext('webgl');
-
-		if (!this._glContext) {
-			throw new Error('WebGL not supported');
-		}
+	constructor(glContext, options = {}) {
+		// this._canvas = canvas;
+		this._glContext = glContext;
 
 		this._options = {
 			clearColor: [0, 0, 0, 0],
 			...options
 		};
+
+		this._camera = null;
 
 		this._initGL();
 		this._initResources();
@@ -32,9 +30,14 @@ class GLRenderer {
 		// Override in subclass to initialize shaders, buffers, etc.
 	}
 
+	setCamera(camera) {
+		this._camera = camera;
+	}
+
 	setSize(width, height) {
-		this._canvas.width = width;
-		this._canvas.height = height;
+		// TODO: here? or in SceneView?
+		// this._canvas.width = width;
+		// this._canvas.height = height;
 		this._glContext.viewport(0, 0, width, height);
 	}
 
@@ -82,14 +85,6 @@ class GLRenderer {
 
 	render() {
 		this.clear();
-	}
-
-	startAnimation() {
-		const animate = (time) => {
-			this.render();
-			requestAnimationFrame(animate);
-		};
-		requestAnimationFrame(animate);
 	}
 }
 

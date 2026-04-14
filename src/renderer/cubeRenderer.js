@@ -5,14 +5,12 @@ import GLGeometry from "../gl/geometry";
 import GLBuffer from "../gl/buffer";
 import GLTexture from "../gl/texture";
 
-import GLCamera from "../camera/camera";
-import CameraController from "../camera/cameraController";
-import { vec3 } from "../math/vec3"
+import { vec3 } from "../math/vec3";
 
 class CubeRenderer extends GLRenderer {
 
-	constructor(canvas, options={}) {
-		super(canvas, options);
+	constructor(glContext, options={}) {
+		super(glContext, options);
 	}
 
 	async _initResources() {
@@ -30,21 +28,6 @@ class CubeRenderer extends GLRenderer {
 		// Create program
 		const glProgram = new GLProgram({ glContext: gl, vertexShader, fragmentShader });
 		this._program = glProgram.create();
-
-		// Create camera and controller
-		this._camera = new GLCamera({
-			position: vec3(3, 3, 3),
-			target: vec3(0, 0, 0),
-			xAngle: 45,
-			yAngle: -45,
-			aspect: gl.canvas.clientWidth / gl.canvas.clientHeight,
-		});
-		const cameraController = new CameraController(
-			this._camera,
-			gl,
-			{ cameraSpeed: 10 }
-		);
-		cameraController.listen();
 
 		// Create shaders
 		const vsCubeResource = new GLShader({ glContext: gl, shaderType: gl.VERTEX_SHADER });
@@ -77,7 +60,26 @@ class CubeRenderer extends GLRenderer {
 
 		const textureObj = new GLTexture({ glContext: gl });
 		this._cubeTexture = textureObj.create();
-		await textureObj.loadFromUrl('./assets/textures/cube.png', this._cubeTexture);
+		gl.bindTexture(gl.TEXTURE_2D, this._cubeTexture);
+
+		// TODO: not here
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+		// TODO: not here, create models and add them to the scene
+		this._cubeModelPositions = [];
+		const gridSpacing = 5;
+		const gridOffset = gridSpacing;
+		for (let row = 0; row < 3; row += 1) {
+			for (let col = 0; col < 3; col += 1) {
+				const x = col * gridSpacing - gridOffset;
+				const z = row * gridSpacing - gridOffset;
+				this._cubeModelPositions.push(vec3(x, 0, z));
+			}
+		}
 
 		this._inited = true;
 	}
@@ -91,7 +93,7 @@ class CubeRenderer extends GLRenderer {
 
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 		super.render();
-		gl.enable(gl.CULL_FACE);
+		// gl.enable(gl.CULL_FACE);
 		gl.enable(gl.DEPTH_TEST);
 
 		gl.useProgram(this._cubeProgram);
@@ -116,12 +118,15 @@ class CubeRenderer extends GLRenderer {
 
 
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indicesBuffer);
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this._cubeTexture);
-		gl.uniform1i(gl.getUniformLocation(this._cubeProgram, "uTexture"), 0);
 
 		const indexCount = this._indCount;
-		gl.drawElements(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0);
+		// TODO: scene objects
+		for (const modelPosition of this._cubeModelPositions) {
+			this.setUniforms(this._cubeProgram, {
+				uModelPosition: modelPosition
+			});
+			gl.drawElements(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0);
+		}
 	}
 
 }
