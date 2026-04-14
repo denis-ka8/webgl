@@ -7,7 +7,6 @@ import GLTexture from "../gl/texture";
 
 import GLCamera from "../camera/camera";
 import CameraController from "../camera/cameraController";
-import { m4 } from "../math/m4";
 import { vec3 } from "../math/vec3"
 
 class CubeRenderer extends GLRenderer {
