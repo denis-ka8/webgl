@@ -22,6 +22,7 @@ class GLCamera {
 		this._aspect = options.aspect || this._aspect;
 		this._near = options.near || this._near;
 		this._far = options.far || this._far;
+		// TODO: calc angles from position and target
 		this._xAngle = options.xAngle || this._xAngle;
 		this._yAngle = options.yAngle || this._yAngle;
 		this._xAngleRad = MathConverter.degreesToRadians(this._xAngle);
