@@ -68,9 +68,14 @@ class GLRenderer {
 				continue;
 			}
 			if (typeof value === 'number') {
-				gl.uniform1f(location, value);
+				if (Number.isInteger(value)) {
+					gl.uniform1i(location, value);
+				} else {
+					gl.uniform1f(location, value);
+				}
 			} else if (value.length) {
 				switch (value.length) {
+					case 1: gl.uniform1iv(location, value); break;
 					case 2: gl.uniform2fv(location, value); break;
 					case 3: gl.uniform3fv(location, value); break;
 					case 4: gl.uniform4fv(location, value); break;

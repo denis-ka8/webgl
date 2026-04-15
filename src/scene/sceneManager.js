@@ -1,6 +1,7 @@
 import SceneModel from "./sceneModel"
 import SceneView from "./sceneView"
 import CubeRenderer from "../renderer/cubeRenderer"
+import Camera from "../models/camera/camera";
 import CubeModel from "../models/cubeModel"
 import { vec3 } from "../math/vec3"
 
@@ -22,6 +23,8 @@ class SceneManager {
 		this._sceneModel = new SceneModel();
 		this._renderer = new CubeRenderer(this._glContext);
 		this._sceneView = new SceneView(this._sceneModel, this._renderer, this._glContext);
+
+		this._createCamera();
 
 		this._isRunning = false;
 	}
@@ -53,6 +56,17 @@ class SceneManager {
 		this._sceneView.update();
 
 		requestAnimationFrame(() => this._renderLoop());
+	}
+
+	_createCamera() {
+		const camera = new Camera({
+			position: vec3(10, 10, 10),
+			target: vec3(0, 0, 0),
+			xAngle: 45,
+			yAngle: -45,
+			aspect: this._glContext.canvas.clientWidth / this._glContext.canvas.clientHeight,
+		});
+		this._sceneModel.addCamera(camera);
 	}
 
 	_createCubes() {

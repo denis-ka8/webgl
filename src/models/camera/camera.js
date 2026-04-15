@@ -1,6 +1,6 @@
-import { m4 } from "../math/m4"; // TODO: remove
-import { vec3 } from "../math/vec3";
-import MathConverter from "../math/converter";
+import { m4 } from "../../math/m4"; // TODO: remove
+import { vec3 } from "../../math/vec3";
+import MathConverter from "../../math/converter";
 
 class GLCamera {
 

@@ -5,8 +5,6 @@ import GLGeometry from "../gl/geometry";
 import GLBuffer from "../gl/buffer";
 import GLTexture from "../gl/texture";
 
-import { vec3 } from "../math/vec3";
-
 class CubeRenderer extends GLRenderer {
 
 	constructor(glContext, options={}) {
@@ -69,6 +67,8 @@ class CubeRenderer extends GLRenderer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
+		await textureObj.loadFromUrl('./assets/textures/cube.png', this._cubeTexture);
+
 		this._inited = true;
 	}
 
@@ -108,6 +108,12 @@ class CubeRenderer extends GLRenderer {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indicesBuffer);
 
 		const indexCount = this._indCount;
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this._cubeTexture);
+		this.setUniforms(this._cubeProgram, {
+			uTexture: 0
+		});
+
 		for (const drawable of this._objects) {
 			this.setUniforms(this._cubeProgram, {
 				uModelPosition: drawable.model.position,

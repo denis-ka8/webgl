@@ -1,8 +1,5 @@
 
-import GLCamera from "../camera/camera";
 import CameraController from "../camera/cameraController";
-import { vec3 } from "../math/vec3";
-
 import CubeDrawable from "../drawables/mesh/cubeDrawable";
 
 /**
@@ -19,6 +16,7 @@ class SceneView {
 		this._sceneModel.on('objectAdded', this._onObjectAdded.bind(this));
 		this._sceneModel.on('objectUpdated', this._onObjectUpdated.bind(this));
 		this._sceneModel.on('objectRemoved', this._onObjectRemoved.bind(this));
+		this._sceneModel.on('cameraAdded', this._onCameraAdded.bind(this));
 
 		this._drawableObjects = new Map(); // Map of modelIdCounter to drawable object
 
@@ -26,35 +24,24 @@ class SceneView {
 		this._pendingUpdates = new Set(); // Set of modelIdCounter that need to be updated
 		this._pendingAdditions = new Set(); // Set of modelIdCounter that need to be added
 		this._pendingRemovals = new Set(); // Set of modelIdCounter that need to be removed
-
-		this._initializeCamera();
-		this._renderer.setCamera(this._camera);
 	}
 
 	destructor() {
 		// TODO:
 		// this._cameraController.destructor();
-		// this._camera.destructor();
 	}
 
 	get model() { return this._sceneModel; }
 
-	// get drawables() { return this._drawableObjects; }
-
-	_initializeCamera() {
-		this._camera = new GLCamera({
-			position: vec3(10, 10, 10),
-			target: vec3(0, 0, 0),
-			xAngle: 45,
-			yAngle: -45,
-			aspect: this._glContext.canvas.clientWidth / this._glContext.canvas.clientHeight,
-		});
+	_initializeCameraController(camera) {
 		this._cameraController = new CameraController(
-			this._camera,
+			camera,
 			this._glContext,
 			{ cameraSpeed: 10 }
 		);
 		this._cameraController.listen();
+
+		this._renderer.setCamera(camera);
 	}
 
 	_createDrawable(model) {
@@ -86,6 +73,11 @@ class SceneView {
 
 	_onObjectRemoved(object) {
 		this._pendingRemovals.add(object.id);
+	}
+
+	_onCameraAdded(camera) {
+		// TODO: one active camera at a time for now
+		this._initializeCameraController(camera);
 	}
 
 	_prepareDiffData() {

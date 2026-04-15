@@ -1,12 +1,12 @@
 import EventEmitter from "../utils/eventEmitter";
 import { Vec3, vec3 } from "../math/vec3";
-import GLCamera from "./camera"
+import Camera from "../models/camera/camera"
 
 const MOVE_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'];
 
 class CameraController extends EventEmitter {
 
-	_camera = null; // GLCamera
+	_camera = null; // Camera
 	_glContext = null; // WebGL context
 	_cameraSpeed = 100;
 	_rotateSpeed = 0.5;
@@ -16,7 +16,7 @@ class CameraController extends EventEmitter {
 	_rotateStartCoordinates = null;
 
 	/**
-	 * @param {GLCamera} camera 
+	 * @param {Camera} camera 
 	 * @param {Object} options 
 	 * options.cameraSpeed - speed of the camera movement in units per second
 	 */
