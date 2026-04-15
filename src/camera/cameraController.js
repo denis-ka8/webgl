@@ -1,4 +1,4 @@
-import EventEmitter from "../base/eventEmitter";
+import EventEmitter from "../utils/eventEmitter";
 import { Vec3, vec3 } from "../math/vec3";
 import GLCamera from "./camera"
 

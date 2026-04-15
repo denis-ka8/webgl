@@ -1,4 +1,4 @@
-import EventEmitter from "../base/eventEmitter"
+import EventEmitter from "../utils/eventEmitter"
 
 let modelIdCounter = 0;
 
