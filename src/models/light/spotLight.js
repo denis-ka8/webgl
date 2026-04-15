@@ -3,24 +3,28 @@ import Color from "../../utils/color"
 import { vec3 } from "../../math/vec3"
 
 class SpotLight extends PointLight {
-	constructor(
-		color = Color.white(),
-		intensity = 1.0,
-		position = vec3(0, 5, 0),
-		range = 10.0,
-		direction = vec3(0, -1, 0),
-		angle = 45,
-		penumbra = 0.1
-	) {
-		super(color, intensity, position, range);
-		this._direction = direction;
-		this._angle = angle; // угол конуса света в градусах
-		this._penumbra = penumbra; // степень размытия тени
+	constructor(options = {}) {
+		super(options);
+		this._angle = options.angle !== undefined ? options.angle : 45; // угол конуса света в градусах
+		this._penumbra = options.penumbra !== undefined ? options.penumbra : 0.1; // степень размытия тени
+		this._type = Light.Types.Spot;
+	}
+
+	get angle() { return this._angle; }
+	set angle(value) {
+		this._angle = value;
+		this.trigger('modelUpdated', "angle", value);
+	}
+
+	get penumbra() { return this._penumbra; }
+	set penumbra(value) {
+		this._penumbra = value;
+		this.trigger('modelUpdated', "penumbra", value);
 	}
 
 	getUniformData() {
 		const data = super.getUniformData();
-		data.type = Light.Types.Spot;
+		data.type = this._type;
 		data.angle = this._angle;
 		data.penumbra = this._penumbra;
 		return data;

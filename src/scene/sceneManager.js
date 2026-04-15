@@ -71,11 +71,10 @@ class SceneManager {
 	}
 
 	_createGlobalLight() {
-		const globalLight = new DirectionalLight(
-			Color.white(),
-			0.95,
-			vec3(-0.6, -1.0, -0.4)
-		);
+		const globalLight = new DirectionalLight({
+			intensity: 0.95,
+			direction: vec3(-0.6, -1.0, -0.4),
+		});
 		this._sceneModel.addLight(globalLight);
 	}
 

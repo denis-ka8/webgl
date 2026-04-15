@@ -21,13 +21,10 @@ class SceneView {
 		this._glContext = glContext;
 
 		this._sceneModel.on('objectAdded', this._onObjectAdded.bind(this));
-		// this._sceneModel.on('objectUpdated', this._onObjectUpdated.bind(this));
 		this._sceneModel.on('objectRemoved', this._onObjectRemoved.bind(this));
 		this._sceneModel.on('cameraAdded', this._onCameraAdded.bind(this));
-		// this._sceneModel.on('cameraUpdated', this._onCameraUpdated.bind(this));
 		this._sceneModel.on('cameraRemoved', this._onCameraRemoved.bind(this));
 		this._sceneModel.on('lightAdded', this._onLightAdded.bind(this));
-		this._sceneModel.on('lightUpdated', this._onLightUpdated.bind(this));
 		this._sceneModel.on('lightRemoved', this._onLightRemoved.bind(this));
 
 		this._drawableObjects = new Map(); // Map of modelIdCounter to drawable object
@@ -78,17 +75,21 @@ class SceneView {
 
 	// Scene model event handlers
 	_onObjectAdded(object) {
+		object.on("modelUpdated", (param, value) => {
+			this._onObjectUpdated(object, param, value);
+		});
 		const id = this._createDrawable(object);
 		if (id !== null) {
 			this._pendingAdditions.add(object.id);
 		}
 	}
 
-	// _onObjectUpdated(object) {
+	_onObjectUpdated(object, param, value) {
 	// 	this._pendingUpdates.add(object.id);
-	// }
+	}
 
 	_onObjectRemoved(object) {
+		// object.off("modelUpdated");
 		this._pendingRemovals.add(object.id);
 	}
 
@@ -102,8 +103,11 @@ class SceneView {
 	_onCameraRemoved(camera) {}
 	
 	_onLightAdded(light) {
-		const lightData = light.getUniformData();
+		light.on("modelUpdated", (param, value) => {
+			this._onLightUpdated(param, value);
+		});
 
+		const lightData = light.getUniformData();
 		const directionalColor = lightData.color.toRGBArray();
 		const direction = Vec3.normalize(lightData.direction);
 		const directionalIntensity = lightData.intensity;
@@ -134,7 +138,9 @@ class SceneView {
 		}
 	}
 
-	_onLightRemoved(light) {}
+	_onLightRemoved(light) {
+		// light.off("modelUpdated");
+	}
 
 	_prepareObjectsDiff() {
 		return {
@@ -154,7 +160,7 @@ class SceneView {
 		const objectsDiff = this._prepareObjectsDiff();
 		this._clearPending();
 
-		this._renderer.updateScene(objectsDiff);
+		this._renderer.updateSceneObjects(objectsDiff);
 		this._renderer.render();
 	}
 

@@ -9,13 +9,33 @@ const TYPES = {
 };
 
 class Light extends BaseModel {
-	// TODO: pass options object instead of individual parameters
-	constructor(color = Color.white(), intensity = 1.0) {
-		super();
-		this._color = color;
-		this._intensity = intensity;
+	constructor(options = {}) {
+		super(options);
+		this._color = options.color || Color.white();
+		this._intensity = options.intensity !== undefined ? options.intensity : 1.0;
 		this._position = vec3();
 		this._direction = vec3(0, -1, 0);
+		this._type = null;
+	}
+
+	get type() { return this._type; }
+
+	get color() { return this._color; }
+	set color(value) {
+		this._color = value;
+		this.trigger('modelUpdated', "color", value);
+	}
+
+	get intensity() { return this._intensity; }
+	set intensity(value) {
+		this._intensity = value;
+		this.trigger('modelUpdated', "intensity", value);
+	}
+
+	get position() { return this._position; }
+	set position(v) {
+		this._position = v;
+		this.trigger('modelUpdated', "position", v);
 	}
 
 	get direction() { return this._direction; }
@@ -23,8 +43,6 @@ class Light extends BaseModel {
 		this._direction = v;
 		this.trigger('modelUpdated', "direction", v);
 	}
-
-	// TODO: add other property getters/setters and trigger 'modelUpdated' event on change
 
 	getUniformData() {
 		return {

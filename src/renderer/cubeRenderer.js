@@ -14,16 +14,19 @@ class CubeRenderer extends GLRenderer {
 		this._cameraUniforms = {};
 	}
 
-	updateScene(objectsDiff = { additions: [], updates: [], removals: [] }, lights = [], cameras = []) {
+	updateSceneObjects(objectsDiff = { additions: [], updates: [], removals: [] }) {
 		// TODO: handle additions, updates and removals
 		if (objectsDiff.additions.length) {
 			this._objects = objectsDiff.additions; // TODO: tmp!
 		}
-		// TODO: handle camera uniforms only when camera changes
 	}
 
 	updateLightUniforms(uniforms) {
 		this._lightUniforms = uniforms;
+	}
+
+	updateCameraUniforms(uniforms) {
+		this._cameraUniforms = uniforms;
 	}
 
 	async _initResources() {

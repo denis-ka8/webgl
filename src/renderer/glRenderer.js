@@ -1,6 +1,5 @@
 class GLRenderer {
 	constructor(glContext, options = {}) {
-		// this._canvas = canvas;
 		this._glContext = glContext;
 
 		this._options = {
@@ -30,10 +29,6 @@ class GLRenderer {
 
 	async _initResources() {
 		// Override in subclass to initialize shaders, buffers, etc.
-	}
-
-	updateScene(objectsDiff, lights = [], cameras = []) {
-		// Override in subclass to update scene objects, lights, etc.
 	}
 
 	setCamera(camera) {

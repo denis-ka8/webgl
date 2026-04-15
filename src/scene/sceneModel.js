@@ -17,11 +17,6 @@ class SceneModel extends BaseModel {
 			console.warn(`Object with id ${object.id} already exists in the scene model. It will be overwritten.`);
 		}
 		this._objects.set(object.id, object);
-
-		// TODO: here ? or in meshdrawable subscribe to model changes and trigger to sceneview
-		// object.on('update', () => {
-		// 	this.trigger('objectUpdated', object);
-		// });
 		this.trigger('objectAdded', object);
 	}
 
@@ -39,9 +34,6 @@ class SceneModel extends BaseModel {
 		if (this._lights.has(light.id)) {
 			console.warn(`Light with id ${light.id} already exists in the scene model. It will be overwritten.`);
 		}
-		light.on('modelUpdated', (param, value) => {
-			this.trigger('lightUpdated', param, value);
-		});
 		this._lights.set(light.id, light);
 		this.trigger('lightAdded', light);
 	}

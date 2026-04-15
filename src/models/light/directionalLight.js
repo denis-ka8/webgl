@@ -3,18 +3,15 @@ import Color from "../../utils/color"
 import { vec3 } from "../../math/vec3"
 
 class DirectionalLight extends Light {
-	constructor(
-		color = Color.white(),
-		intensity = 1.0,
-		direction = vec3(0, -1, 0)
-	) {
-		super(color, intensity);
-		this._direction = direction;
+	constructor(options = {}) {
+		super(options);
+		this._direction = options.direction || vec3(0, -1, 0);
+		this._type = Light.Types.Directional;
 	}
 
 	getUniformData() {
 		const data = super.getUniformData();
-		data.type = Light.Types.Directional;
+		data.type = this._type;
 		return data;
 	}
 }
