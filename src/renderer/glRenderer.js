@@ -10,6 +10,8 @@ class GLRenderer {
 
 		this._camera = null;
 
+		this._objects = [];
+
 		this._initGL();
 		this._initResources();
 	}
@@ -28,6 +30,12 @@ class GLRenderer {
 
 	async _initResources() {
 		// Override in subclass to initialize shaders, buffers, etc.
+	}
+
+	// TODO: wip
+	updateScene(diffData) {
+		if (diffData.additions.length)
+			this._objects = diffData.additions;
 	}
 
 	setCamera(camera) {

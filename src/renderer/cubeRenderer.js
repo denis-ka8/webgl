@@ -69,18 +69,6 @@ class CubeRenderer extends GLRenderer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-		// TODO: not here, create models and add them to the scene
-		this._cubeModelPositions = [];
-		const gridSpacing = 5;
-		const gridOffset = gridSpacing;
-		for (let row = 0; row < 3; row += 1) {
-			for (let col = 0; col < 3; col += 1) {
-				const x = col * gridSpacing - gridOffset;
-				const z = row * gridSpacing - gridOffset;
-				this._cubeModelPositions.push(vec3(x, 0, z));
-			}
-		}
-
 		this._inited = true;
 	}
 
@@ -120,10 +108,9 @@ class CubeRenderer extends GLRenderer {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indicesBuffer);
 
 		const indexCount = this._indCount;
-		// TODO: scene objects
-		for (const modelPosition of this._cubeModelPositions) {
+		for (const drawable of this._objects) {
 			this.setUniforms(this._cubeProgram, {
-				uModelPosition: modelPosition
+				uModelPosition: drawable.model.position,
 			});
 			gl.drawElements(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0);
 		}

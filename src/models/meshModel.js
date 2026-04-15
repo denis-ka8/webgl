@@ -7,7 +7,12 @@ class MeshModel extends BaseModel {
 
 	constructor(options={}) {
 		super(options);
+
+		this._position = options.position || vec3();
 	}
+
+	get position() { return this._position; }
+	set position(value) { this._position = value; }
 }
 
 export default MeshModel;

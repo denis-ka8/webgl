@@ -1,6 +1,8 @@
 import SceneModel from "./sceneModel"
 import SceneView from "./sceneView"
 import CubeRenderer from "../renderer/cubeRenderer"
+import CubeModel from "../models/cubeModel"
+import { vec3 } from "../math/vec3"
 
 /**
  * SceneManager is responsible for managing the scene,
@@ -26,6 +28,8 @@ class SceneManager {
 
 	initialize() {
 		// this._renderer.initialize();
+
+		this._createCubes();
 	}
 
 	start() {
@@ -49,6 +53,19 @@ class SceneManager {
 		this._sceneView.update();
 
 		requestAnimationFrame(() => this._renderLoop());
+	}
+
+	_createCubes() {
+		const gridSpacing = 5;
+		const gridOffset = gridSpacing;
+		for (let row = 0; row < 3; row += 1) {
+			for (let col = 0; col < 3; col += 1) {
+				const x = col * gridSpacing - gridOffset;
+				const z = row * gridSpacing - gridOffset;
+				const cubeModel = new CubeModel({ position: vec3(x, 0, z) });
+				this._sceneModel.addObject(cubeModel);
+			}
+		}
 	}
 }
 
