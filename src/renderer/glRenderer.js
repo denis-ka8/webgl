@@ -32,10 +32,8 @@ class GLRenderer {
 		// Override in subclass to initialize shaders, buffers, etc.
 	}
 
-	// TODO: wip
-	updateScene(diffData) {
-		if (diffData.additions.length)
-			this._objects = diffData.additions;
+	updateScene(objectsDiff, lights = [], cameras = []) {
+		// Override in subclass to update scene objects, lights, etc.
 	}
 
 	setCamera(camera) {

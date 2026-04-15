@@ -39,12 +39,19 @@ class SceneModel extends BaseModel {
 		if (this._lights.has(light.id)) {
 			console.warn(`Light with id ${light.id} already exists in the scene model. It will be overwritten.`);
 		}
+		light.on('modelUpdated', (param, value) => {
+			this.trigger('lightUpdated', param, value);
+		});
 		this._lights.set(light.id, light);
 		this.trigger('lightAdded', light);
 	}
 
 	getLight(id) {
 		return this._lights.get(id);
+	}
+
+	getLights() {
+		return Array.from(this._lights.values());
 	}
 
 	removeLight(id) {

@@ -36,6 +36,10 @@ class Color {
 		return this._data;
 	}
 
+	toRGBArray() {
+		return this._data.slice(0, 3);
+	}
+
 	_clamp(value) {
 		return Math.max(0.0, Math.min(1.0, value));
 	}

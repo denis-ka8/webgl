@@ -3,6 +3,8 @@ import SceneView from "./sceneView"
 import CubeRenderer from "../renderer/cubeRenderer"
 import Camera from "../models/camera/camera";
 import CubeModel from "../models/cubeModel"
+import DirectionalLight from "../models/light/directionalLight"
+import Color from "../utils/color"
 import { vec3 } from "../math/vec3"
 
 /**
@@ -24,14 +26,13 @@ class SceneManager {
 		this._renderer = new CubeRenderer(this._glContext);
 		this._sceneView = new SceneView(this._sceneModel, this._renderer, this._glContext);
 
-		this._createCamera();
-
 		this._isRunning = false;
 	}
-
+	
 	initialize() {
-		// this._renderer.initialize();
-
+		// this._renderer.initialize();		
+		this._createCamera();
+		this._createGlobalLight();
 		this._createCubes();
 	}
 
@@ -67,6 +68,15 @@ class SceneManager {
 			aspect: this._glContext.canvas.clientWidth / this._glContext.canvas.clientHeight,
 		});
 		this._sceneModel.addCamera(camera);
+	}
+
+	_createGlobalLight() {
+		const globalLight = new DirectionalLight(
+			Color.white(),
+			0.95,
+			vec3(-0.6, -1.0, -0.4)
+		);
+		this._sceneModel.addLight(globalLight);
 	}
 
 	_createCubes() {

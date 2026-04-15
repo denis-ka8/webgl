@@ -9,23 +9,25 @@ class CubeRenderer extends GLRenderer {
 
 	constructor(glContext, options={}) {
 		super(glContext, options);
+
+		this._lightUniforms = {};
+		this._cameraUniforms = {};
+	}
+
+	updateScene(objectsDiff = { additions: [], updates: [], removals: [] }, lights = [], cameras = []) {
+		// TODO: handle additions, updates and removals
+		if (objectsDiff.additions.length) {
+			this._objects = objectsDiff.additions; // TODO: tmp!
+		}
+		// TODO: handle camera uniforms only when camera changes
+	}
+
+	updateLightUniforms(uniforms) {
+		this._lightUniforms = uniforms;
 	}
 
 	async _initResources() {
 		const gl = this._glContext;
-
-		// Create shaders
-		const vsResource = new GLShader({ glContext: gl, shaderType: gl.VERTEX_SHADER });
-		const vsSource = await vsResource.fetchFromUrl('./assets/shaders/test.vs');
-		const vertexShader = vsResource.create(vsSource);
-
-		const fsResource = new GLShader({ glContext: gl, shaderType: gl.FRAGMENT_SHADER });
-		const fsSource = await fsResource.fetchFromUrl('./assets/shaders/test.fs');
-		const fragmentShader = fsResource.create(fsSource);
-
-		// Create program
-		const glProgram = new GLProgram({ glContext: gl, vertexShader, fragmentShader });
-		this._program = glProgram.create();
 
 		// Create shaders
 		const vsCubeResource = new GLShader({ glContext: gl, shaderType: gl.VERTEX_SHADER });
@@ -88,7 +90,8 @@ class CubeRenderer extends GLRenderer {
 		// TODO: calculate matrices only when camera moves and cache them
 		this.setUniforms(this._cubeProgram, {
 			uProjectionMatrix: this._camera.getProjectionMatrix(),
-			uViewMatrix: this._camera.getViewMatrix()
+			uViewMatrix: this._camera.getViewMatrix(),
+			...this._lightUniforms
 		});
 
 		const stride = (3 + 2 + 3) * 4;

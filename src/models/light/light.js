@@ -9,6 +9,7 @@ const TYPES = {
 };
 
 class Light extends BaseModel {
+	// TODO: pass options object instead of individual parameters
 	constructor(color = Color.white(), intensity = 1.0) {
 		super();
 		this._color = color;
@@ -16,6 +17,14 @@ class Light extends BaseModel {
 		this._position = vec3();
 		this._direction = vec3(0, -1, 0);
 	}
+
+	get direction() { return this._direction; }
+	set direction(v) {
+		this._direction = v;
+		this.trigger('modelUpdated', "direction", v);
+	}
+
+	// TODO: add other property getters/setters and trigger 'modelUpdated' event on change
 
 	getUniformData() {
 		return {
