@@ -2,32 +2,29 @@ import Vec from "./vec";
 
 class Vec3 extends Vec {
 
-	constructor(x = 0, y = 0, z = 0) {
-		super(3);
-		this[0] = x;
-		this[1] = y;
-		this[2] = z;
+	constructor(x: number = 0, y: number = 0, z: number = 0) {
+		super([x, y, z]);
 	}
 
-	get x() { return this[0]; }
-	get y() { return this[1]; }
-	get z() { return this[2]; }
+	get x(): number { return this[0] as number; }
+	get y(): number { return this[1] as number; }
+	get z(): number { return this[2] as number; }
 
-	set x(value) { this[0] = value; }
-	set y(value) { this[1] = value; }
-	set z(value) { this[2] = value; }
+	set x(value: number) { this[0] = value; }
+	set y(value: number) { this[1] = value; }
+	set z(value: number) { this[2] = value; }
 
-	static normalize(v) {
+	static normalize(v: Vec3): Vec3 {
 		const length = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-		if (length === 0) return new Vec3(0, 0, 0);
+		if (length === 0) return new Vec3();
 		return new Vec3(v.x / length, v.y / length, v.z / length);
 	}
 
-	static subtract(a, b) {
+	static subtract(a: Vec3, b: Vec3): Vec3 {
 		return new Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
 	}
 
-	static cross(a, b) {
+	static cross(a: Vec3, b: Vec3): Vec3 {
 		return new Vec3(
 			a.y * b.z - a.z * b.y,
 			a.z * b.x - a.x * b.z,
@@ -35,26 +32,26 @@ class Vec3 extends Vec {
 		);
 	}
 
-	copy() {
+	copy(): Vec3 {
 		return new Vec3(this.x, this.y, this.z);
 	}
 
-	add(v) {
+	add(v: Vec3): Vec3 {
 		return new Vec3(this.x + v.x, this.y + v.y, this.z + v.z);
 	}
 
-	scale(value) {
+	scale(value: number): Vec3 {
 		return new Vec3(this.x * value, this.y * value, this.z * value);
 	}
 
-	dot(v) {
+	dot(v: Vec3): number {
 		return this.x * v.x + this.y * v.y + this.z * v.z;
 	}
 
 	// TODO: add methods for vector operations (add, subtract, dot product, cross product, etc.)
 }
 
-function vec3(x = 0, y = 0, z = 0) {
+function vec3(x: number = 0, y: number = 0, z: number = 0): Vec3 {
 	return new Vec3(x, y, z);
 }
 

@@ -1,6 +1,6 @@
 class Vec extends Float32Array {
 
-	constructor(sizeOrArray = 0) {
+	constructor(sizeOrArray: number | Array<number> | Float32Array = 0) {
 		if (Array.isArray(sizeOrArray) || sizeOrArray instanceof Float32Array) {
 			super(sizeOrArray);
 		} else {

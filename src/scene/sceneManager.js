@@ -4,7 +4,6 @@ import CubeRenderer from "../renderer/cubeRenderer"
 import Camera from "../models/camera/camera";
 import CubeModel from "../models/cubeModel"
 import DirectionalLight from "../models/light/directionalLight"
-import Color from "../utils/color"
 import { vec3 } from "../math/vec3"
 
 /**
