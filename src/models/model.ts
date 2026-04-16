@@ -1,25 +1,33 @@
-import EventEmitter from "../utils/eventEmitter"
+import EventEmitter from "../utils/eventEmitter";
 
 let modelIdCounter = 0;
+
+export interface BaseModelOptions {
+}
 
 /**
  * BaseModel is a base class for all models in the application.
  * It provides basic functionality for tracking changes and applying them to the model.
  */
 class BaseModel extends EventEmitter {
-	constructor(options={}) {
+
+	private _id: number;
+	private _dirty: Record<string, boolean> = {};
+
+	constructor(options: BaseModelOptions) {
 		super();
 		this._id = modelIdCounter++;
-		this._dirty = {};
 	}
 
-	get id() { return this._id; }
+	get id(): number {
+		return this._id;
+	}
 
-	save() {
+	save(): void {
 		// TODO: save changes as dirty
 	}
 
-	apply() {
+	apply(): void {
 		// TODO:
 		// apply changes to the model, clear dirty flags
 		// trigger model changed event, update views
