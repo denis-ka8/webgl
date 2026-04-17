@@ -1,5 +1,7 @@
 import PointLight, { PointLightOptions } from "./pointLight";
 import { LightType } from "./light";
+import Color from "../../utils/color";
+import { Vec3 } from "../../math/vec3";
 
 export interface SpotLightOptions extends PointLightOptions {
 	angle?: number;    // угол конуса света в градусах
@@ -36,7 +38,15 @@ class SpotLight extends PointLight {
 		this.trigger('modelUpdated', "penumbra", value);
 	}
 	
-	getUniformData(): SpotLightOptions {
+	getUniformData(): {
+		color: Color,
+		intensity: number,
+		position: Vec3,
+		type: LightType,
+		range: number,
+		angle: number,
+		penumbra: number
+	} {
 		return {
 			...super.getUniformData(),
 			type: this._type,

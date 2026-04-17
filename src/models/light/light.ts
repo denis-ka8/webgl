@@ -50,7 +50,12 @@ abstract class Light extends BaseModel {
 		this.trigger('modelUpdated', "position", v);
 	}
 
-	getUniformData(): LightOptions {
+	// TODO: return type for all inherited classes
+	getUniformData(): {
+		color: Color,
+		intensity: number,
+		position: Vec3
+	} {
 		return {
 			color: this._color,
 			intensity: this._intensity,

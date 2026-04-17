@@ -1,18 +1,27 @@
-import BaseModel from "../models/model"
+import BaseModel, { BaseModelOptions } from "../models/model";
+import Light from "../models/light/light";
+import DirectionalLight from "../models/light/directionalLight";
+import PointLight from "../models/light/pointLight";
+import SpotLight from "../models/light/spotLight";
+import Camera from "../models/camera/camera";
+
+type LightType = DirectionalLight | PointLight | SpotLight;
+
+interface SceneModelOptions extends BaseModelOptions {}
 
 class SceneModel extends BaseModel {
 
-	constructor(options={}) {
-		super(options);
+	// Map of modelIdCounter to model instance
+	private _objects: Map<number, BaseModel> = new Map();
+	private _lights: Map<number, LightType> = new Map();
+	private _cameras: Map<number, Camera> = new Map();
 
-		// Map of modelIdCounter to model instance
-		this._objects = new Map();
-		this._lights = new Map();
-		this._cameras = new Map();
+	constructor(options: SceneModelOptions = {}) {
+		super(options);
 	}
 
 	// Objects
-	addObject(object) {
+	addObject(object: BaseModel): void {
 		if (this._objects.has(object.id)) {
 			console.warn(`Object with id ${object.id} already exists in the scene model. It will be overwritten.`);
 		}
@@ -20,17 +29,17 @@ class SceneModel extends BaseModel {
 		this.trigger('objectAdded', object);
 	}
 
-	getObject(id) {
+	getObject(id: number): BaseModel | undefined {
 		return this._objects.get(id);
 	}
 
-	removeObject(id) {
+	removeObject(id: number): void {
 		this._objects.delete(id);
 		this.trigger('objectRemoved', id);
 	}
 
 	// Lights
-	addLight(light) {
+	addLight(light: LightType): void {
 		if (this._lights.has(light.id)) {
 			console.warn(`Light with id ${light.id} already exists in the scene model. It will be overwritten.`);
 		}
@@ -38,21 +47,21 @@ class SceneModel extends BaseModel {
 		this.trigger('lightAdded', light);
 	}
 
-	getLight(id) {
+	getLight(id: number): LightType | undefined {
 		return this._lights.get(id);
 	}
 
-	getLights() {
+	getLights(): LightType[] {
 		return Array.from(this._lights.values());
 	}
 
-	removeLight(id) {
+	removeLight(id: number): void {
 		this._lights.delete(id);
 		this.trigger('lightRemoved', id);
 	}
 
 	// Cameras
-	addCamera(camera) {
+	addCamera(camera: Camera): void {
 		if (this._cameras.has(camera.id)) {
 			console.warn(`Camera with id ${camera.id} already exists in the scene model. It will be overwritten.`);
 		}
@@ -60,11 +69,11 @@ class SceneModel extends BaseModel {
 		this.trigger('cameraAdded', camera);
 	}
 
-	getCamera(id) {
+	getCamera(id: number): Camera | undefined {
 		return this._cameras.get(id);
 	}
 
-	removeCamera(id) {
+	removeCamera(id: number): void {
 		this._cameras.delete(id);
 		this.trigger('cameraRemoved', id);
 	}

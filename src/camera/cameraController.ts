@@ -1,30 +1,59 @@
 import EventEmitter from "../utils/eventEmitter";
 import { Vec3, vec3 } from "../math/vec3";
-import Camera from "../models/camera/camera"
+import Camera from "../models/camera/camera";
 
-const MOVE_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'];
+const MOVE_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'] as const;
+
+type KeyType = typeof MOVE_KEYS[number];
+
+interface CameraControllerOptions {
+	cameraSpeed?: number;
+}
 
 class CameraController extends EventEmitter {
 
-	_camera = null; // Camera
-	_glContext = null; // WebGL context
-	_cameraSpeed = 100;
-	_rotateSpeed = 0.5;
-	_keysPressed = {};
-	_isMoving = false;
-	_isRotating = false;
-	_rotateStartCoordinates = null;
+	private _camera: Camera;
+	private _glContext: WebGLRenderingContext;
+	private _cameraSpeed: number = 100;
+	private _rotateSpeed: number = 0.5;
+	private _keysPressed: Record<KeyType, boolean> = {
+		KeyW: false,
+		KeyA: false,
+		KeyS: false,
+		KeyD: false,
+		KeyQ: false,
+		KeyE: false
+	};
+	private _isMoving: boolean = false;
+	private _isRotating: boolean = false;
+	private _rotateStartCoordinates: { x: number; y: number };
+	private _startAngleX: number = 0;
+	private _startAngleY: number = 0;
+	private _lastFrameTime: number | null = null;
+
+	private _handlers: {
+		keydown: (event: KeyboardEvent) => void;
+		keyup: (event: KeyboardEvent) => void;
+		mousemove: (event: MouseEvent) => void;
+		mousedown: (event: MouseEvent) => void;
+		mouseup: (event: MouseEvent) => void;
+	};
 
 	/**
 	 * @param {Camera} camera 
 	 * @param {Object} options 
 	 * options.cameraSpeed - speed of the camera movement in units per second
 	 */
-	constructor(camera, glContext, options = {}) {
+	constructor(camera: Camera, glContext: WebGLRenderingContext, options: CameraControllerOptions = {}) {
 		super();
+
+		if (!camera) throw new Error('CameraController: camera is required but not provided');
 		this._camera = camera;
-		this._cameraSpeed = options.cameraSpeed || this._cameraSpeed;
+
+		if (!glContext) throw new Error('CameraController: WebGL context is required but not provided');
 		this._glContext = glContext;
+
+		this._cameraSpeed = options.cameraSpeed ?? this._cameraSpeed;
 
 		this._updateCamera = this._updateCamera.bind(this);
 		this._handlers = {
@@ -36,7 +65,7 @@ class CameraController extends EventEmitter {
 		};
 	}
 
-	destructor() {
+	destructor(): void {
 		window.removeEventListener('keydown', this._handlers.keydown);
 		window.removeEventListener('keyup', this._handlers.keyup);
 
@@ -47,9 +76,11 @@ class CameraController extends EventEmitter {
 		super.destructor();
 	}
 
-	get camera() { return this._camera; }
+	get camera(): Camera {
+		return this._camera;
+	}
 
-	listen() {
+	listen(): void {
 		window.addEventListener('keydown', this._handlers.keydown);
 		window.addEventListener('keyup', this._handlers.keyup);
 
@@ -62,10 +93,10 @@ class CameraController extends EventEmitter {
 		requestAnimationFrame(this._updateCamera);
 	}
 
-	_updateCamera(time) {
-		if (!this.lastFrameTime) this.lastFrameTime = time;
-		const deltaTime = (time - this.lastFrameTime) / 1000;
-		this.lastFrameTime = time;
+	private _updateCamera(time: number): void {
+		if (!this._lastFrameTime) this._lastFrameTime = time;
+		const deltaTime = (time - this._lastFrameTime) / 1000;
+		this._lastFrameTime = time;
 
 		if (!this._isMoving) {
 			requestAnimationFrame(this._updateCamera);
@@ -90,23 +121,23 @@ class CameraController extends EventEmitter {
 		requestAnimationFrame(this._updateCamera);
 	}
 
-	_keyDownHandler(event) {
-		const key = event.code;
+	private _keyDownHandler(event: KeyboardEvent): void {
+		const key = event.code as KeyType;
 		if (!MOVE_KEYS.includes(key)) return;
 
 		this._keysPressed[key] = true;
 		this._isMoving = true;
 	}
 
-	_keyUpHandler(event) {
-		const key = event.code;
+	private _keyUpHandler(event: KeyboardEvent): void {
+		const key = event.code as KeyType;
 		if (!MOVE_KEYS.includes(key)) return;
 
 		this._keysPressed[key] = false;
 		this._isMoving = Object.values(this._keysPressed).some(Boolean);
 	}
 
-	_mouseMoveHandler(event) {
+	private _mouseMoveHandler(event: MouseEvent): void {
 		if (!this._isRotating) return;
 		const newCoordinates = {
 			x: event.clientX - this._rotateStartCoordinates.x,
@@ -116,16 +147,15 @@ class CameraController extends EventEmitter {
 		this._camera.yAngle = this._startAngleY - newCoordinates.y * this._rotateSpeed;
 	}
 
-	_mouseDownHandler(event) {
+	private _mouseDownHandler(event: MouseEvent): void {
 		this._isRotating = true;
 		this._rotateStartCoordinates = { x: event.clientX, y: event.clientY };
 		this._startAngleX = this._camera.xAngle;
 		this._startAngleY = this._camera.yAngle;
 	}
 
-	_mouseUpHandler(event) {
+	private _mouseUpHandler(event: MouseEvent): void {
 		this._isRotating = false;
-		this._rotateStartCoordinates = null;
 	}
 }
 

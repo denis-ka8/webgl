@@ -1,8 +1,9 @@
 import { m4 } from "../../math/m4"; // TODO: remove
 import { Vec3, vec3 } from "../../math/vec3";
 import MathConverter from "../../math/converter";
+import BaseModel, { BaseModelOptions } from "../model";
 
-export interface CameraOptions {
+export interface CameraOptions extends BaseModelOptions {
     position?: Vec3;
     target?: Vec3;
     fov?: number;
@@ -31,7 +32,7 @@ export interface ICamera {
     getUpVector(): Vec3;
 }
 
-export abstract class AbstractCamera implements ICamera {
+export abstract class AbstractCamera extends BaseModel implements ICamera {
     protected _position: Vec3;
     protected _target: Vec3;
     protected _fov: number;
@@ -44,6 +45,7 @@ export abstract class AbstractCamera implements ICamera {
     protected _yAngleRad: number;
 
     constructor(options: CameraOptions = {}) {
+        super(options)
         this._position = options.position || vec3(1, 1, 1);
         this._target = options.target || vec3(0, 0, 0);
         this.fov = options.fov ?? 60;

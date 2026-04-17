@@ -1,4 +1,6 @@
 import Light, { LightType, LightOptions } from "./light";
+import Color from "../../utils/color";
+import { Vec3 } from "../../math/vec3";
 
 export interface PointLightOptions extends LightOptions {
 	range?: number;
@@ -23,7 +25,13 @@ class PointLight extends Light {
 		this.trigger('modelUpdated', "range", value);
 	}
 	
-	getUniformData(): PointLightOptions {
+	getUniformData(): {
+		color: Color,
+		intensity: number,
+		position: Vec3,
+		type: LightType,
+		range: number
+	} {
 		return {
 			...super.getUniformData(),
 			type: this._type,

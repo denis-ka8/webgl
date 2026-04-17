@@ -1,5 +1,6 @@
 import Light, { LightType, LightOptions } from "./light";
 import { Vec3, vec3 } from "../../math/vec3";
+import Color from "../../utils/color";
 
 export interface DirectionalLightOptions extends LightOptions {
 	direction?: Vec3;
@@ -21,7 +22,13 @@ class DirectionalLight extends Light {
 		this.trigger('modelUpdated', "direction", v);
 	}
 
-	getUniformData(): DirectionalLightOptions {
+	getUniformData(): {
+		color: Color,
+		intensity: number,
+		position: Vec3,
+		type: LightType,
+		direction: Vec3
+	} {
 		return {
 			...super.getUniformData(),
 			type: this._type,

@@ -1,10 +1,10 @@
-import SceneModel from "./sceneModel"
-import SceneView from "./sceneView"
-import CubeRenderer from "../renderer/cubeRenderer"
+import SceneModel from "./sceneModel";
+import SceneView from "./sceneView";
+import CubeRenderer from "../renderer/cubeRenderer";
 import Camera from "../models/camera/camera";
-import CubeModel from "../models/cubeModel"
-import DirectionalLight from "../models/light/directionalLight"
-import { vec3 } from "../math/vec3"
+import CubeModel from "../models/cubeModel";
+import DirectionalLight from "../models/light/directionalLight";
+import { vec3 } from "../math/vec3";
 
 /**
  * SceneManager is responsible for managing the scene,
@@ -13,44 +13,49 @@ import { vec3 } from "../math/vec3"
  * the rendering loop, and handle resizing of the canvas.
  */
 class SceneManager {
-	constructor(canvas) {
+
+	private _canvas: HTMLCanvasElement;
+	private _glContext: WebGLRenderingContext;
+	private _sceneModel: SceneModel;
+	private _renderer: CubeRenderer;
+	private _sceneView: SceneView;
+	private _isRunning: boolean = false;
+
+	constructor(canvas: HTMLCanvasElement) {
 		this._canvas = canvas;
-		this._glContext = canvas.getContext('webgl');
+		this._glContext = canvas.getContext('webgl') as WebGLRenderingContext;
 
 		if (!this._glContext) {
 			throw new Error('WebGL not supported');
 		}
 
 		this._sceneModel = new SceneModel();
-		this._renderer = new CubeRenderer(this._glContext);
+		this._renderer = new CubeRenderer({ glContext: this._glContext });
 		this._sceneView = new SceneView(this._sceneModel, this._renderer, this._glContext);
-
-		this._isRunning = false;
 	}
 	
-	initialize() {
-		// this._renderer.initialize();		
+	initialize(): void {
 		this._createCamera();
 		this._createGlobalLight();
 		this._createCubes();
 	}
 
-	start() {
+	start(): void {
 		this._isRunning = true;
 		this._renderLoop();
 	}
 
-	stop() {
+	stop(): void {
 		this._isRunning = false;
 	}
 
-	resize(width, height) {
+	resize(width: number, height: number): void {
 		this._canvas.width = width;
 		this._canvas.height = height;
 		this._sceneView.resize(width, height);
 	}
 
-	_renderLoop() {
+	private _renderLoop(): void {
 		if (!this._isRunning) return;
 
 		this._sceneView.update();
@@ -58,18 +63,26 @@ class SceneManager {
 		requestAnimationFrame(() => this._renderLoop());
 	}
 
-	_createCamera() {
+	private _createCamera(): void {
+		const canvas = this._glContext.canvas;
+		let aspectRatio: number;
+
+		if (canvas instanceof HTMLCanvasElement) {
+			aspectRatio = canvas.clientWidth / canvas.clientHeight;
+		} else {
+			aspectRatio = canvas.width / canvas.height;
+		}
 		const camera = new Camera({
 			position: vec3(10, 10, 10),
 			target: vec3(0, 0, 0),
 			xAngle: 45,
 			yAngle: -45,
-			aspect: this._glContext.canvas.clientWidth / this._glContext.canvas.clientHeight,
+			aspect: aspectRatio,
 		});
 		this._sceneModel.addCamera(camera);
 	}
 
-	_createGlobalLight() {
+	private _createGlobalLight(): void {
 		const globalLight = new DirectionalLight({
 			intensity: 0.95,
 			direction: vec3(-0.6, -1.0, -0.4),
@@ -77,7 +90,7 @@ class SceneManager {
 		this._sceneModel.addLight(globalLight);
 	}
 
-	_createCubes() {
+	private _createCubes(): void {
 		const gridSpacing = 5;
 		const gridOffset = gridSpacing;
 		for (let row = 0; row < 3; row += 1) {

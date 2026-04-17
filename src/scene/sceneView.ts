@@ -1,13 +1,23 @@
 
 import CameraController from "../camera/cameraController";
+import Drawable from "../drawables/drawable";
 import CubeDrawable from "../drawables/mesh/cubeDrawable";
+import Light from "../models/light/light";
+import DirectionalLight from "../models/light/directionalLight";
+import PointLight from "../models/light/pointLight";
+import SpotLight from "../models/light/spotLight";
+import Camera from "../models/camera/camera";
+import BaseModel from "../models/model";
 import Color from "../utils/color";
-import { Vec3 } from "../math/vec3";
+import Renderer from "../renderer/glRenderer";
+import { vec3, Vec3 } from "../math/vec3";
 
 const AMBIENT_LIGHT = {
 	color: new Color(0.18, 0.18, 0.18).toRGBArray(),
 	intensity: 0.35,
 }
+
+type LightType = DirectionalLight | PointLight | SpotLight;
 
 /**
  * SceneView is responsible for managing the camera and the list of drawables in the scene.
@@ -15,7 +25,18 @@ const AMBIENT_LIGHT = {
  */
 class SceneView {
 
-	constructor(sceneModel, renderer, glContext) {
+	private _sceneModel: BaseModel;
+	private _renderer: Renderer;
+	private _glContext: WebGLRenderingContext;
+	private _cameraController: CameraController | null = null;
+	private _drawableObjects: Map<number, Drawable> = new Map(); // Map of modelId to drawable object
+	private _pendingUpdates: Set<number> = new Set(); // Set of modelId that need to be updated
+	private _pendingAdditions: Set<number> = new Set(); // Set of modelId that need to be added
+	private _pendingRemovals: Set<number> = new Set(); // Set of modelId that need to be removed
+	private _lightUniforms: Record<string, any> = {};
+	private _cameraUniforms: Record<string, any> = {};
+
+	constructor(sceneModel: BaseModel, renderer: Renderer, glContext: WebGLRenderingContext) {
 		this._sceneModel = sceneModel;
 		this._renderer = renderer;
 		this._glContext = glContext;
@@ -38,14 +59,14 @@ class SceneView {
 		this._cameraUniforms = {};
 	}
 
-	destructor() {
+	destructor(): void {
 		// TODO:
 		// this._cameraController.destructor();
 	}
 
-	get model() { return this._sceneModel; }
+	get model(): BaseModel { return this._sceneModel; }
 
-	_initializeCameraController(camera) {
+	_initializeCameraController(camera: Camera): void {
 		this._cameraController = new CameraController(
 			camera,
 			this._glContext,
@@ -57,7 +78,7 @@ class SceneView {
 		this._renderer.setCamera(camera);
 	}
 
-	_createDrawable(model) {
+	_createDrawable(model: BaseModel): number | null {
 		let drawable;
 		switch (model.constructor.name) {
 			case 'CubeModel':
@@ -74,7 +95,7 @@ class SceneView {
 	}
 
 	// Scene model event handlers
-	_onObjectAdded(object) {
+	_onObjectAdded(object: BaseModel): void {
 		object.on("modelUpdated", (param, value) => {
 			this._onObjectUpdated(object, param, value);
 		});
@@ -84,32 +105,32 @@ class SceneView {
 		}
 	}
 
-	_onObjectUpdated(object, param, value) {
+	_onObjectUpdated(object: BaseModel, param: string, value: any): void {
 	// 	this._pendingUpdates.add(object.id);
 	}
 
-	_onObjectRemoved(object) {
+	_onObjectRemoved(object: BaseModel): void {
 		// object.off("modelUpdated");
 		this._pendingRemovals.add(object.id);
 	}
 
-	_onCameraAdded(camera) {
+	_onCameraAdded(camera: Camera): void {
 		// TODO: one active camera at a time for now
 		this._initializeCameraController(camera);
 	}
 
-	// _onCameraUpdated(camera) {}
+	// _onCameraUpdated(camera: Camera): void {}
 
-	_onCameraRemoved(camera) {}
+	_onCameraRemoved(camera: Camera): void {}
 	
-	_onLightAdded(light) {
+	_onLightAdded(light: LightType): void {
 		light.on("modelUpdated", (param, value) => {
 			this._onLightUpdated(param, value);
 		});
 
 		const lightData = light.getUniformData();
 		const directionalColor = lightData.color.toRGBArray();
-		const direction = Vec3.normalize(lightData.direction);
+		const direction = ("direction" in lightData) ? Vec3.normalize(lightData.direction) : vec3();
 		const directionalIntensity = lightData.intensity;
 
 		this._lightUniforms = {
@@ -122,7 +143,7 @@ class SceneView {
 		this._renderer.updateLightUniforms(this._lightUniforms);
 	}
 
-	_onLightUpdated(param, value) {
+	_onLightUpdated(param: string, value: any): void {
 		let uniformsUpdated = true;
 		switch (param) {
 			case "direction":
@@ -138,25 +159,35 @@ class SceneView {
 		}
 	}
 
-	_onLightRemoved(light) {
+	_onLightRemoved(light: Light): void {
 		// light.off("modelUpdated");
 	}
 
-	_prepareObjectsDiff() {
+	_prepareObjectsDiff(): {
+		additions: Drawable[];
+		updates: Drawable[];
+		removals: Drawable[];
+	} {
 		return {
-			additions: Array.from(this._pendingAdditions).map(id => this._drawableObjects.get(id)),
-			updates: Array.from(this._pendingUpdates).map(id => this._drawableObjects.get(id)),
-			removals: Array.from(this._pendingRemovals).map(id => this._drawableObjects.get(id))
+			additions: Array.from(this._pendingAdditions)
+				.map(id => this._drawableObjects.get(id))
+				.filter((obj): obj is Drawable => obj !== undefined),
+			updates: Array.from(this._pendingUpdates)
+				.map(id => this._drawableObjects.get(id))
+				.filter((obj): obj is Drawable => obj !== undefined),
+			removals: Array.from(this._pendingRemovals)
+				.map(id => this._drawableObjects.get(id))
+				.filter((obj): obj is Drawable => obj !== undefined),
 		};
 	}
 
-	_clearPending() {
+	_clearPending(): void {
 		this._pendingAdditions.clear();
 		this._pendingUpdates.clear();
 		this._pendingRemovals.clear();
 	}
 
-	update() {
+	update(): void {
 		const objectsDiff = this._prepareObjectsDiff();
 		this._clearPending();
 
@@ -164,7 +195,7 @@ class SceneView {
 		this._renderer.render();
 	}
 
-	resize(width, height) {
+	resize(width: number, height: number): void {
 		this._glContext.canvas.width = width;
 		this._glContext.canvas.height = height;
 		this._renderer.setSize(width, height);
