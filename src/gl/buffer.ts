@@ -1,22 +1,25 @@
-import Resource, { ResourceOptions } from "./resource";
+import Resource, { ResourceOptions, WebGLResourceId } from "./resource";
 
 interface BufferOptions extends ResourceOptions {
+	type?: number;
+	usage?: number;
 }
 
-class Buffer extends Resource {
+class GLBuffer extends Resource {
 
 	private _buffer: WebGLBuffer | null = null;
+	private _data: ArrayBuffer | ArrayBufferView | ArrayBufferLike | null = null;
+	private readonly _type: number;
+	private readonly _usage: number;
 
 	constructor(options: BufferOptions) {
 		super(options);
+		this._type = options.type ?? this._glContext.ARRAY_BUFFER;
+		this._usage = options.usage ?? this._glContext.STATIC_DRAW;
 	}
 
-	create(
-		data: ArrayBuffer | ArrayBufferView,
-		type: number = this._glContext.ARRAY_BUFFER,
-		usage: number = this._glContext.STATIC_DRAW
-	): WebGLBuffer | null {
-		if (!data) {
+	create(): WebGLBuffer | null {
+		if (!this._data) {
 			console.error("Buffer::create()\n\tData is required to create buffer");
 			return null;
 		}
@@ -28,32 +31,40 @@ class Buffer extends Resource {
 			return null;
 		}
 
-		gl.bindBuffer(type, this._buffer);
-		gl.bufferData(type, data, usage);
+		gl.bindBuffer(this._type, this._buffer);
+		gl.bufferData(this._type, this._data, this._usage);
+
+		this.setId(this._buffer);
+
 		return this._buffer;
 	}
 
-	destroy(): void {
+	setData(data: ArrayBuffer | ArrayBufferView | ArrayBufferLike): void {
+		this._data = data;
+	}
+
+	protected _destroyGLResource(resource: WebGLResourceId): void {
 		const gl = this._glContext;
-		if (this._buffer) {
-			gl.deleteBuffer(this._buffer);
-			this._buffer = null;
+		if (resource instanceof WebGLBuffer) {
+			gl.deleteBuffer(resource);
+		} else {
+			console.warn("Buffer::_destroyGLResource()\n\tInvalid resource type");
 		}
 	}
 
-	bind(type: number = this._glContext.ARRAY_BUFFER): void {
-		if (!this._buffer) {
-			console.error("Buffer::bind()\n\tCannot bind buffer: context or buffer is unavailable");
+	bind(type: number = this._type): void {
+		if (!this.isValid()) {
+			console.error("Buffer::bind()\n\tCannot bind buffer: resource is not valid");
 			return;
 		}
 		const gl = this._glContext;
 		gl.bindBuffer(type, this._buffer);
 	}
 
-	unbind(type: number = this._glContext.ARRAY_BUFFER): void {
+	unbind(type: number = this._type): void {
 		const gl = this._glContext;
 		gl.bindBuffer(type, null);
 	}
 }
 
-export default Buffer;
+export default GLBuffer;

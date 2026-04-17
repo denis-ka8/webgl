@@ -1,4 +1,4 @@
-import Resource, { ResourceOptions } from "./resource";
+import Resource, { ResourceOptions, WebGLResourceId } from "./resource";
 
 enum ShaderType {
 	Vertex = 0x8B31, // gl.VERTEX_SHADER
@@ -13,6 +13,7 @@ class Shader extends Resource {
 
 	private _shaderType: ShaderType;
 	private _shader: WebGLShader | null = null;
+	private _source: string;
 
 	constructor(options: ShaderOptions) {
 		super(options);
@@ -23,17 +24,15 @@ class Shader extends Resource {
 		this._shaderType = options.shaderType;
 	}
 
-	get shaderType(): ShaderType {
+	getShaderType(): ShaderType {
 		return this._shaderType;
 	}
 
+	getShader(): WebGLShader | null {
+		return this._shader;
+	}
 
-	create(source: string): WebGLShader | null {
-		if (!source) {
-			console.error("Shader::create()\n\tShader source is required to create shader");
-			return null;
-		}
-
+	create(): WebGLShader | null {
 		const gl = this._glContext;
 		this._shader = gl.createShader(this._shaderType);
 		if (!this._shader) {
@@ -41,22 +40,61 @@ class Shader extends Resource {
 			return null;
 		}
 
-		gl.shaderSource(this._shader, source);
+		gl.shaderSource(this._shader, this._source);
 		gl.compileShader(this._shader);
+
 		const success = gl.getShaderParameter(this._shader, gl.COMPILE_STATUS);
-		if (success) return this._shader;
+		if (success) {
+			this.setId(this._shader);
+			return this._shader;
+		}
 
 		console.warn(gl.getShaderInfoLog(this._shader));
 		gl.deleteShader(this._shader);
+		this._shader = null;
 		return null;
 	}
 
-	destroy(): void {
+	protected _destroyGLResource(resource: WebGLResourceId): void {
 		const gl = this._glContext;
-		if (this._shader && gl) {
-			gl.deleteShader(this._shader);
-			this._shader = null;
+		if (resource instanceof WebGLShader) {
+			gl.deleteShader(resource);
+		} else {
+			console.warn("Shader::_destroyGLResource()\n\tInvalid resource type");
 		}
+	}
+
+	compile(source: string): boolean {
+		if (!source) {
+			console.error("Shader::compile()\n\tShader source is required");
+			return false;
+		}
+
+		this._source = source;
+		const compiledShader = this.create();
+		return compiledShader !== null;
+	}
+
+	isValid(): boolean {
+		return super.isValid() && this._shader !== null;
+	}
+
+	// TMP here
+	async fetchFromUrl(url: string): Promise<string | null> {
+		if (!url) {
+			console.error("Resource::fetchFromUrl()\n\tURL is required to fetch resource");
+			return null;
+		}
+
+		try {
+			const response = await fetch(url);
+			if (response.ok) return await response.text();
+
+			throw new Error(`Status: ${response.status}, ${response.statusText}`);
+		} catch (error: unknown) {
+			console.error(`Resource::fetchFromUrl()\n\tError fetching resource from URL: ${url}\n\t${error instanceof Error ? error.message : String(error)}`);
+		}
+		return null;
 	}
 }
 

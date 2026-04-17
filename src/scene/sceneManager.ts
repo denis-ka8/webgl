@@ -93,8 +93,8 @@ class SceneManager {
 	private _createCubes(): void {
 		const gridSpacing = 5;
 		const gridOffset = gridSpacing;
-		for (let row = 0; row < 3; row += 1) {
-			for (let col = 0; col < 3; col += 1) {
+		for (let row = 0; row < 10; row += 1) {
+			for (let col = 0; col < 10; col += 1) {
 				const x = col * gridSpacing - gridOffset;
 				const z = row * gridSpacing - gridOffset;
 				const cubeModel = new CubeModel({ position: vec3(x, 0, z) });

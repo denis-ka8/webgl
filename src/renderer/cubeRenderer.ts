@@ -2,7 +2,7 @@ import Renderer, { RendererOptions, ObjectsDiff } from "./glRenderer";
 import Program from "../gl/program";
 import Shader from "../gl/shader";
 import Geometry from "../gl/geometry";
-import Buffer from "../gl/buffer";
+import GLBuffer from "../gl/buffer";
 import Texture from "../gl/texture";
 
 class CubeRenderer extends Renderer {
@@ -49,7 +49,8 @@ class CubeRenderer extends Renderer {
 			console.error('CubeRenderer::_initResources() - Failed to load vertex shader source');
 			return;
 		}
-		const cubeVertexShader = vsCubeResource.create(vsCubeSource);
+		vsCubeResource.compile(vsCubeSource);
+		const cubeVertexShader = vsCubeResource.create();
 		if (!cubeVertexShader) return;
 
 		const fsCubeResource = new Shader({ glContext: gl, shaderType: gl.FRAGMENT_SHADER });
@@ -58,7 +59,8 @@ class CubeRenderer extends Renderer {
 			console.error('CubeRenderer::_initResources() - Failed to load fragment shader source');
 			return;
 		}
-		const cubeFragmentShader = fsCubeResource.create(fsCubeSource);
+		fsCubeResource.compile(fsCubeSource);
+		const cubeFragmentShader = fsCubeResource.create();
 		if (!cubeFragmentShader) return;
 
 		// Create program
@@ -73,16 +75,19 @@ class CubeRenderer extends Renderer {
 		const geometryObj = new Geometry({ glContext: gl });
 		const geometrySource = await geometryObj.fetchFromUrl('./assets/geometry/cube.obj');
 		if (!geometrySource) return;
-		const geometryBuffer = geometryObj.create(geometrySource);
+		if (!geometryObj.parseSource(geometrySource)) return;
+		const geometryBuffer = geometryObj.create();
 		if (!geometryBuffer) return;
-		this._cubeVertexCount = geometryObj.vertexCount;
+		this._cubeVertexCount = geometryObj.getVertexCount();
 
-		const vertexBuffer = new Buffer({ glContext: gl });
-		this._cubeVertexBuffer = vertexBuffer.create(geometryBuffer);
+		const vertexBuffer = new GLBuffer({ glContext: gl });
+		vertexBuffer.setData(geometryObj.getVertices().buffer);
+		this._cubeVertexBuffer = vertexBuffer.create();
 
-		const indicesBuffer = new Buffer({ glContext: gl });
-		this._indicesBuffer = indicesBuffer.create(new Uint16Array(geometryObj.indices), gl.ELEMENT_ARRAY_BUFFER);
-		this._indCount = geometryObj.indicesCount;
+		const indicesBuffer = new GLBuffer({ glContext: gl, type: gl.ELEMENT_ARRAY_BUFFER });
+		indicesBuffer.setData(geometryObj.getIndices().buffer);
+		this._indicesBuffer = indicesBuffer.create();
+		this._indCount = geometryObj.getIndicesCount();
 
 		const textureObj = new Texture({ glContext: gl });
 		this._cubeTexture = textureObj.create();
@@ -96,7 +101,7 @@ class CubeRenderer extends Renderer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-		await textureObj.loadFromUrl('./assets/textures/cube.png', this._cubeTexture);
+		await textureObj.loadFromUrl('./assets/textures/cube.png');
 
 		this._inited = true;
 	}

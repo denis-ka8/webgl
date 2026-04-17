@@ -13,7 +13,7 @@ import Renderer from "../renderer/glRenderer";
 import { vec3, Vec3 } from "../math/vec3";
 
 const AMBIENT_LIGHT = {
-	color: new Color(0.18, 0.18, 0.18).toRGBArray(),
+	color: Color.white().toRGBArray(),
 	intensity: 0.35,
 }
 

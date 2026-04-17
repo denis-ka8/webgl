@@ -1,10 +1,24 @@
+export type WebGLResourceId = WebGLTexture | WebGLShader | WebGLProgram | WebGLBuffer;
+
+export interface IResource {
+	create(): WebGLResourceId | null;
+	dispose(): void;
+	isValid(): boolean;
+	getId(): WebGLResourceId | null;
+	setId(id: WebGLResourceId | null): void;
+	getGLContext(): WebGLRenderingContext;
+}
+
 export interface ResourceOptions {
 	glContext: WebGLRenderingContext;
 }
 
-class Resource {
+abstract class Resource implements IResource {
 
 	protected _glContext: WebGLRenderingContext;
+	protected _id: WebGLResourceId | null = null;
+	protected _isCreated: boolean = false;
+	protected _isDisposed: boolean = false;
 
 	constructor(options: ResourceOptions) {
 		if (!options.glContext)
@@ -13,26 +27,43 @@ class Resource {
 		this._glContext = options.glContext;
 	}
 
-	get glContext(): WebGLRenderingContext {
+	abstract create(): WebGLResourceId | null;
+
+	dispose(): void {
+		if (this._isDisposed) return;
+
+		if (this._id) {
+			this._destroyGLResource(this._id);
+			this._id = null;
+		}
+
+		this._isCreated = false;
+		this._isDisposed = true;
+	}
+
+	isValid(): boolean {
+		return this._isCreated && !this._isDisposed && this._id !== null;
+	}
+
+	getId(): WebGLResourceId {
+		if (!this.isValid())
+			throw new Error(`Resource is not valid (created: ${this._isCreated}, disposed: ${this._isDisposed})`);
+
+		return this._id!;
+	}
+
+	setId(id: WebGLResourceId | null): void {
+		this._id = id;
+		this._isCreated = id !== null;
+		this._isDisposed = false;
+	}
+
+	getGLContext(): WebGLRenderingContext {
 		return this._glContext;
 	}
 
-	async fetchFromUrl(url: string): Promise<string | null> {
-		if (!url) {
-			console.error("Resource::fetchFromUrl()\n\tURL is required to fetch resource");
-			return null;
-		}
-
-		try {
-			const response = await fetch(url);
-			if (response.ok) return await response.text();
-
-			throw new Error(`Status: ${response.status}, ${response.statusText}`);
-		} catch (error: unknown) {
-			console.error(`Resource::fetchFromUrl()\n\tError fetching resource from URL: ${url}\n\t${error instanceof Error ? error.message : String(error)}`);
-		}
-		return null;
-	}
+	// Abstract method for destroy specific resource
+	protected abstract _destroyGLResource(resource: WebGLResourceId): void;
 }
 
 export default Resource;

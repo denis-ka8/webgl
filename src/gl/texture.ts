@@ -1,4 +1,4 @@
-import Resource, { ResourceOptions } from "./resource";
+import Resource, { ResourceOptions, WebGLResourceId } from "./resource";
 
 interface TextureOptions extends ResourceOptions {
 }
@@ -11,6 +11,10 @@ class Texture extends Resource {
 		super(options);
 	}
 
+	getTexture(): WebGLTexture | null {
+		return this._texture;
+	}
+
 	create(): WebGLTexture | null {
     	const gl = this._glContext;
 		this._texture = gl.createTexture();
@@ -19,33 +23,52 @@ class Texture extends Resource {
 			return null;
 		}
 
+		this.setId(this._texture);
 		return this._texture;
 	}
 
-	bind(texture: WebGLTexture): this {
-		if (!texture) {
+	protected _destroyGLResource(resource: WebGLResourceId): void {
+		const gl = this._glContext;
+		if (resource instanceof WebGLTexture) {
+			gl.deleteTexture(resource);
+		} else {
+			console.warn("Texture::_destroyGLResource()\n\tInvalid resource type");
+		}
+	}
+
+	isValid(): boolean {
+		return super.isValid() && this._texture !== null;
+	}
+
+	bind(unit: number = 0): this {
+		if (!this.isValid()) {
 			console.error("Texture::bind()\n\tCannot bind texture: context or texture is unavailable");
 			return this;
 		}
 
 		const gl = this._glContext;
-		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.activeTexture(gl.TEXTURE0 + unit);
+		gl.bindTexture(gl.TEXTURE_2D, this._texture!);
 		return this;
 	}
 
 	setFlipY(enabled: boolean): this {
+		if (!this.isValid()) return this;
+
 		const gl = this._glContext;
     	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, enabled ? 1 : 0);
 		return this;
 	}
 
-	uploadImage(texture: WebGLTexture, image: HTMLImageElement, flipY: boolean): this {
+	uploadImage(image: HTMLImageElement, flipY: boolean): this {
 		if (!image) {
 			console.error("Texture::uploadImage()\n\tImage is required to upload to texture");
 			return this;
 		}
 
-		this.bind(texture);
+		if (!this.isValid()) return this;
+
+		this.bind();
 		this.setFlipY(flipY);
 
 		const gl = this._glContext;
@@ -60,58 +83,54 @@ class Texture extends Resource {
 		return this;
 	}
 
-	generateMipmap(texture: WebGLTexture): this {
-		this.bind(texture);
+	generateMipmap(): this {
+	    if (!this.isValid()) return this;
+
 		const gl = this._glContext;
 		gl.generateMipmap(gl.TEXTURE_2D);
 		return this;
 	}
 
-	setWrapMode(texture: WebGLTexture, wrapS: number, wrapT: number): this {
+	setWrapMode(wrapS: number, wrapT: number): this {
+    	if (!this.isValid()) return this;
+
 		const gl = this._glContext;
-		this.bind(texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
 		return this;
 	}
 
-	setFilter(texture: WebGLTexture, minFilter: number, magFilter: number): this {
+	setFilter(minFilter: number, magFilter: number): this {
+	    if (!this.isValid()) return this;
+
 		const gl = this._glContext;
-		this.bind(texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
 		return this;
 	}
 
-	configureTexture(texture: WebGLTexture, image: HTMLImageElement): this {
+	configureTexture(image: HTMLImageElement): this {
+		if (!this.isValid()) return this;
+
 		const gl = this._glContext;
 		const isPOT = this._isPowerOfTwo(image.width) && this._isPowerOfTwo(image.height);
 
 		if (isPOT) {
-			this.generateMipmap(texture);
-			this.setWrapMode(texture, gl.REPEAT, gl.REPEAT);
-			this.setFilter(texture, gl.LINEAR_MIPMAP_LINEAR, gl.LINEAR);
+			this.generateMipmap();
+			this.setWrapMode(gl.REPEAT, gl.REPEAT);
+			this.setFilter(gl.LINEAR_MIPMAP_LINEAR, gl.LINEAR);
 		} else {
-			this.setWrapMode(texture, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE);
-			this.setFilter(texture, gl.LINEAR, gl.LINEAR);
+			this.setWrapMode(gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE);
+			this.setFilter(gl.LINEAR, gl.LINEAR);
 		}
 		return this;
 	}
 
-	destroy(): void {
-		const gl = this._glContext;
-		if (this._texture) {
-			gl.deleteTexture(this._texture);
-			this._texture = null;
-		}
-	}
-
-
-	async loadFromUrl(url: string, texture: WebGLTexture): Promise<this> {
+	async loadFromUrl(url: string): Promise<this> {
 		try {
 			const image = await this._loadImage(url);
-			this.uploadImage(texture, image, true);
-			this.configureTexture(texture, image);
+			this.uploadImage(image, true);
+			this.configureTexture(image);
 		} catch (error) {
 			console.error(`GLTexture::loadFromUrl()\n\tFailed to load image from ${url}:`, error);
 		}

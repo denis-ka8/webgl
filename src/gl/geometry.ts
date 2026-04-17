@@ -1,4 +1,4 @@
-import Resource, { ResourceOptions } from "./resource";
+import Resource, { ResourceOptions, WebGLResourceId } from "./resource";
 
 interface GeometryOptions extends ResourceOptions {
 }
@@ -12,39 +12,93 @@ interface ParsedGeometry {
 	indicesCount: number;
 }
 
+const EMPTY_FLOAT_32_ARRAY = new Float32Array(0);
+const EMPTY_UINT_16_ARRAY = new Uint16Array(0);
+
 class Geometry extends Resource {
 
-	private _vertexCount: number = 0;
-	private _indices: Uint16Array = new Uint16Array(0);
-	private _indicesCount: number = 0;
 	private _parsedData: ParsedGeometry | null = null;
+	private _vertexBuffer: WebGLBuffer | null = null;
+	private _indexBuffer: WebGLBuffer | null = null;
 
 	constructor(options: GeometryOptions) {
 		super(options);
 	}
 
-	get vertexCount(): number {
-		return this._vertexCount;
+	getVertices(): Float32Array {
+		return this._parsedData?.vertices ?? EMPTY_FLOAT_32_ARRAY;
 	}
 
-	get indices(): Uint16Array {
-		return this._indices;
+	getVertexCount(): number {
+		return this._parsedData?.vertexCount ?? 0;
 	}
 
-	get indicesCount(): number {
-		return this._indicesCount;
+	getIndices(): Uint16Array {
+		return this._parsedData?.indices ?? EMPTY_UINT_16_ARRAY;
 	}
 
-	create(source: string): ArrayBuffer | null {
-		const arrayBuffer = this._parseSource(source);
-		if (!arrayBuffer) {
-			console.error("Geometry::create()\n\tFailed to parse geometry source");
+	getIndicesCount(): number {
+		return this._parsedData?.indicesCount ?? 0;
+	}
+
+	create(): WebGLBuffer | null {
+		if (!this._parsedData) {
+			console.error("Geometry::create()\n\tNo parsed geometry data to create buffers");
 			return null;
 		}
-		return arrayBuffer;
+
+		const gl = this._glContext;
+
+		this._vertexBuffer = gl.createBuffer();
+		if (!this._vertexBuffer) {
+			console.error("Geometry::create()\n\tFailed to create vertex buffer");
+			return null;
+		}
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this._vertexBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, this._parsedData.vertices, gl.STATIC_DRAW);
+
+		this._indexBuffer = gl.createBuffer();
+		if (!this._indexBuffer) {
+			console.error("Geometry::create()\n\tFailed to create index buffer");
+			gl.deleteBuffer(this._vertexBuffer);
+			return null;
+		}
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this._parsedData.indices, gl.STATIC_DRAW);
+
+		this.setId(this._vertexBuffer);
+
+		return this._vertexBuffer;
 	}
 
-	private _parseSource(source: string): ArrayBuffer | null {
+	protected _destroyGLResource(resource: WebGLResourceId): void {
+		const gl = this._glContext;
+		if (resource instanceof WebGLBuffer) {
+			gl.deleteBuffer(resource);
+			if (this._vertexBuffer && this._vertexBuffer !== resource) {
+				gl.deleteBuffer(this._vertexBuffer);
+			}
+			if (this._indexBuffer && this._indexBuffer !== resource) {
+				gl.deleteBuffer(this._indexBuffer);
+			}
+		} else {
+			console.warn("Geometry::_destroyGLResource()\n\tInvalid resource type");
+		}
+	}
+
+	parseSource(source: string): boolean {
+		const parsed = this._parseSource(source);
+		if (!parsed) {
+			console.error("Geometry::parseSource()\n\tFailed to parse geometry source");
+			return false;
+		}
+		this._parsedData = parsed;
+		return true;
+	}
+
+	private _parseSource(source: string): ParsedGeometry | null {
 		if (!source) {
 			console.error("Geometry::_parseSource()\n\tGeometry source is required to parse geometry");
 			return null;
@@ -107,26 +161,22 @@ class Geometry extends Resource {
 			}
 		}
 
-		this._vertexCount = nextIndex;
-		this._indices = new Uint16Array(indices);
-		this._indicesCount = indices.length;
-
-		this._parsedData = {
+		return {
 			vertices: new Float32Array(finalVertices),
 			normals: new Float32Array(normals),
 			texCoords: new Float32Array(texCoords),
-			indices: this._indices,
-			vertexCount: this._vertexCount,
-			indicesCount: this._indicesCount
-		};
-
-		return new Float32Array(finalVertices).buffer;
+			indices: new Uint16Array(indices),
+			vertexCount: nextIndex,
+			indicesCount: indices.length
+		}
+		// return new Float32Array(finalVertices).buffer;
 	}
 
 	private _safeGet<T>(array: T[], index: number, defaultValue: T): T {
 		return array[index] !== undefined ? array[index] : defaultValue;
 	}
 
+	// TODO: for tests
 	private _saveBinFile(filename: string, arrayBuffer: ArrayBuffer): void {
 		const blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
 		const url = URL.createObjectURL(blob);
@@ -139,6 +189,7 @@ class Geometry extends Resource {
 		URL.revokeObjectURL(url);
 	}
 
+	// TODO: for tests
 	async fromFile(filePath: string): Promise<ArrayBuffer | null> {
 		try {
 			const response = await fetch("./assets/geometry.bin");
@@ -151,6 +202,24 @@ class Geometry extends Resource {
 			console.error(`Geometry::fromFile()\n\tFailed to load geometry from ${filePath}:`, error);
 			return null;
 		}
+	}
+
+	// TMP here
+	async fetchFromUrl(url: string): Promise<string | null> {
+		if (!url) {
+			console.error("Resource::fetchFromUrl()\n\tURL is required to fetch resource");
+			return null;
+		}
+
+		try {
+			const response = await fetch(url);
+			if (response.ok) return await response.text();
+
+			throw new Error(`Status: ${response.status}, ${response.statusText}`);
+		} catch (error: unknown) {
+			console.error(`Resource::fetchFromUrl()\n\tError fetching resource from URL: ${url}\n\t${error instanceof Error ? error.message : String(error)}`);
+		}
+		return null;
 	}
 }
 
