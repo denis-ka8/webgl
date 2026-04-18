@@ -1,19 +1,22 @@
-/*
 import Color from "../utils/color";
-import Resource, { ResourceOptions } from "./resource";
+import Resource, { ResourceOptions, WebGLResourceId } from "./resource";
+import Texture from "./texture";
 
-// enum IOR {
-// 	Glass = 1.5
-// }
+export enum IOR {
+    Air = 1.0,
+    Water = 1.33,
+	Glass = 1.5,
+    Diamond = 2.4
+}
 
 export type TextureSlot =
-    | 'baseColor'
-    | 'metallic'
-    | 'roughness'
-    | 'normal'
-    | 'ao'
-    | 'emissive'
-    | 'height';
+    | "baseColor"
+    | "metallic"
+    | "roughness"
+    | "normal"
+    | "ao"
+    | "emissive"
+    | "height";
 
 interface MaterialOptions extends ResourceOptions {
     baseColor?: Color;
@@ -27,16 +30,7 @@ interface MaterialOptions extends ResourceOptions {
     // sss?: number;
 }
 
-export interface IMaterial {
-    setTexture(slot: TextureSlot, texture: WebGLTexture | null): void;
-    getTexture(slot: TextureSlot): WebGLTexture | null;
-
-    emissiveIntensity: number;
-    normalScale: number;
-    aoIntensity: number;
-}
-
-class Material extends Resource implements IMaterial {
+class Material extends Resource {
 
     // PBR
     private _baseColor = Color.white();
@@ -53,57 +47,76 @@ class Material extends Resource implements IMaterial {
     // private _ior = IOR.Glass;               // Index of Refraction - показатель преломления
     // private _sss = null;                    // Subsurface Scattering - подповерхностное рассеивание
 
+    // Textures
+    private _textures: Record<TextureSlot, Texture | null> = {
+        baseColor: null,
+        metallic: null,
+        roughness: null,
+        normal: null,
+        ao: null,
+        emissive: null,
+        height: null
+    };
+
 	constructor(options: MaterialOptions) {
 		super(options);
+
+        if (options.baseColor) this._baseColor = options.baseColor;
+        this._metallic = options.metallic ?? this._metallic;
+        this._roughness = options.roughness ?? this._roughness;
 	}
 
-    get baseColor(): Color {
+    getBaseColor(): Color {
         return this._baseColor;
     }
-    set baseColor(color: Color) {
+    setBaseColor(color: Color) {
         this._baseColor = color;
     }
 
-    get metallic(): number {
+    getMetallic(): number {
         return this._metallic;
     }
-    set metallic(value: number) {
+    setMetallic(value: number) {
         this._metallic = value;
     }
 
-    get roughness(): number {
+    getRoughness(): number {
         return this._roughness;
     }
-    set roughness(value: number) {
+    setRoughness(value: number) {
         this._roughness = value;
     }
 
-    initialize(gl) {
-        // Инициализация текстур, если они есть
-        Object.values(this._textures).forEach(texture => {
-        if (texture && !texture.isInitialized()) {
-        texture.initialize(gl);
-        }
-        });
-        this._initialized = true;
+    setTexture(slot: TextureSlot, texture: Texture): void {
+        this._textures[slot] = texture;
     }
 
-    dispose(gl) {
-        // Освобождаем текстуры
-        Object.values(this._textures).forEach(texture => {
-        if (texture) texture.dispose(gl);
-        });
-        this._initialized = false;
+    getTexture(slot: TextureSlot): Texture | null {
+        return this._textures[slot];
     }
 
-    update(gl) {
-        if (this.isDirty()) {
-            // Переинициализируем при необходимости
-            this.initialize(gl);
-            this.clearDirty();
-        }
+    create(): WebGLResourceId | null {
+        return null;
+    }
+
+    protected _destroyGLResource(resource: WebGLResourceId): void {
+    }
+
+    isValid(): boolean {
+        const hasBaseColor = this._baseColor !== null;
+        const hasTextures = Object.values(this._textures).some(texture => texture !== null && texture.isValid());
+
+        return hasBaseColor || hasTextures;
+    }
+
+    dispose(): void {
+        if (this._isDisposed) return;
+
+        Object.values(this._textures).forEach(texture => {
+            if (texture) texture.dispose();
+        });
+        super.dispose();
     }
 }
 
 export default Material;
-*/

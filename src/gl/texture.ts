@@ -6,6 +6,7 @@ interface TextureOptions extends ResourceOptions {
 class Texture extends Resource {
 
 	private _texture: WebGLTexture | null = null;
+	private _image: HTMLImageElement | null = null;
 
 	constructor(options: TextureOptions) {
 		super(options);
@@ -25,6 +26,19 @@ class Texture extends Resource {
 
 		this.setId(this._texture);
 		return this._texture;
+	}
+
+	initializeWithDefaults(): void {
+		if (!this.isValid()) return;
+
+		const gl = this._glContext;
+		gl.bindTexture(gl.TEXTURE_2D, this._texture!);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
+
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	}
 
 	protected _destroyGLResource(resource: WebGLResourceId): void {
@@ -60,8 +74,9 @@ class Texture extends Resource {
 		return this;
 	}
 
-	uploadImage(image: HTMLImageElement, flipY: boolean): this {
-		if (!image) {
+	// TODO: refac
+	uploadImage(flipY: boolean): this {
+		if (!this._image) {
 			console.error("Texture::uploadImage()\n\tImage is required to upload to texture");
 			return this;
 		}
@@ -78,7 +93,7 @@ class Texture extends Resource {
 			gl.RGBA,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE,
-			image
+			this._image
 		);
 		return this;
 	}
@@ -109,11 +124,16 @@ class Texture extends Resource {
 		return this;
 	}
 
-	configureTexture(image: HTMLImageElement): this {
+	// TODO: refac
+	configureTexture(): this {
+		if (!this._image) {
+			console.error("Texture::uploadImage()\n\tImage is required to upload to texture");
+			return this;
+		}
 		if (!this.isValid()) return this;
 
 		const gl = this._glContext;
-		const isPOT = this._isPowerOfTwo(image.width) && this._isPowerOfTwo(image.height);
+		const isPOT = this._isPowerOfTwo(this._image.width) && this._isPowerOfTwo(this._image.height);
 
 		if (isPOT) {
 			this.generateMipmap();
@@ -128,9 +148,10 @@ class Texture extends Resource {
 
 	async loadFromUrl(url: string): Promise<this> {
 		try {
-			const image = await this._loadImage(url);
-			this.uploadImage(image, true);
-			this.configureTexture(image);
+			this._image = await this._loadImage(url);
+			// const image = await this._loadImage(url);
+			// this.uploadImage(image, true);
+			// this.configureTexture(image);
 		} catch (error) {
 			console.error(`GLTexture::loadFromUrl()\n\tFailed to load image from ${url}:`, error);
 		}

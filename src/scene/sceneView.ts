@@ -9,7 +9,7 @@ import SpotLight from "../models/light/spotLight";
 import Camera from "../models/camera/camera";
 import BaseModel from "../models/model";
 import Color from "../utils/color";
-import Renderer from "../renderer/glRenderer";
+import CubeRenderer from "../renderer/cubeRenderer";
 import { vec3, Vec3 } from "../math/vec3";
 
 const AMBIENT_LIGHT = {
@@ -26,7 +26,7 @@ type LightType = DirectionalLight | PointLight | SpotLight;
 class SceneView {
 
 	private _sceneModel: BaseModel;
-	private _renderer: Renderer;
+	private _renderer: CubeRenderer;
 	private _glContext: WebGLRenderingContext;
 	private _cameraController: CameraController | null = null;
 	private _drawableObjects: Map<number, Drawable> = new Map(); // Map of modelId to drawable object
@@ -36,7 +36,7 @@ class SceneView {
 	private _lightUniforms: Record<string, any> = {};
 	private _cameraUniforms: Record<string, any> = {};
 
-	constructor(sceneModel: BaseModel, renderer: Renderer, glContext: WebGLRenderingContext) {
+	constructor(sceneModel: BaseModel, renderer: CubeRenderer, glContext: WebGLRenderingContext) {
 		this._sceneModel = sceneModel;
 		this._renderer = renderer;
 		this._glContext = glContext;
@@ -72,8 +72,15 @@ class SceneView {
 			this._glContext,
 			{ cameraSpeed: 10 }
 		);
+		this._cameraController.on("change", (camera: Camera) => {
+			// TODO: if renderer
+			this._renderer.updateCameraUniforms({
+				uProjectionMatrix: camera.getProjectionMatrix(),
+				uViewMatrix: camera.getViewMatrix(),
+			});
+			this._renderer.updateCameraPosition(camera.position);
+		});
 		this._cameraController.listen();
-		// TODO: on change, update camera uniforms in the renderer
 
 		this._renderer.setCamera(camera);
 	}

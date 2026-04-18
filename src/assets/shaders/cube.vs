@@ -8,9 +8,11 @@ uniform vec3 uModelPosition;
 
 varying vec2 vTexCoord;
 varying vec3 vNormal;
+varying vec3 vWorldPos;
 
 void main() {
 	vTexCoord = aTexCoord;
 	vNormal = aNormal;
-	gl_Position = uProjectionMatrix * uViewMatrix * vec4(aPosition + uModelPosition, 1.0);
+	vWorldPos = aPosition + uModelPosition;
+	gl_Position = uProjectionMatrix * uViewMatrix * vec4(vWorldPos, 1.0);
 }

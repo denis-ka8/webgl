@@ -73,10 +73,10 @@ class SceneManager {
 			aspectRatio = canvas.width / canvas.height;
 		}
 		const camera = new Camera({
-			position: vec3(10, 10, 10),
+			position: vec3(40, 20, 50),
 			target: vec3(0, 0, 0),
-			xAngle: 45,
-			yAngle: -45,
+			xAngle: 30,
+			yAngle: -30,
 			aspect: aspectRatio,
 		});
 		this._sceneModel.addCamera(camera);
@@ -85,7 +85,7 @@ class SceneManager {
 	private _createGlobalLight(): void {
 		const globalLight = new DirectionalLight({
 			intensity: 0.95,
-			direction: vec3(-0.6, -1.0, -0.4),
+			direction: vec3(0.6, -1.0, -0.4),
 		});
 		this._sceneModel.addLight(globalLight);
 	}

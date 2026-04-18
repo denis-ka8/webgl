@@ -1,3 +1,4 @@
+import { Vec3, vec3 } from "../math/vec3";
 import Camera from "../models/camera/camera";
 
 export interface RendererOptions {
@@ -30,6 +31,8 @@ class Renderer implements IRenderer {
 	// TODO:
 	protected _objects: any[] = [];
 
+	protected _cameraPosition: Vec3 = vec3();
+	protected _cameraUniforms: Record<string, any> = {};
 	protected _lightUniforms: Record<string, any> = {};
 
 	constructor(options: RendererOptions) {
@@ -37,6 +40,7 @@ class Renderer implements IRenderer {
 
 		this._objects = [];
 
+		this._cameraUniforms = {};
 		this._lightUniforms = {};
 
 		this._initGL();
@@ -45,7 +49,7 @@ class Renderer implements IRenderer {
 
 	private _initGL(): void {
 		const gl = this._glContext;
-		gl.clearColor(0, 0, 0, 0);
+		gl.clearColor(34 / 255, 40 / 255, 49 / 255, 1.0);
 		gl.enable(gl.DEPTH_TEST);
 		gl.depthFunc(gl.LEQUAL);
 
@@ -61,6 +65,12 @@ class Renderer implements IRenderer {
 
 	setCamera(camera: Camera): void {
 		this._camera = camera;
+		
+		this.updateCameraUniforms({
+			uProjectionMatrix: camera.getProjectionMatrix(),
+			uViewMatrix: camera.getViewMatrix(),
+		});
+		this.updateCameraPosition(camera.position);
 	}
 
 	setSize(width: number, height: number): void {
@@ -72,7 +82,7 @@ class Renderer implements IRenderer {
 
 	clear(): void {
 		const gl = this._glContext;
-		gl.clearColor(0, 0, 0, 0);
+		gl.clearColor(34 / 255, 40 / 255, 49 / 255, 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	}
 
@@ -80,6 +90,14 @@ class Renderer implements IRenderer {
 		if (objectsDiff.additions.length) {
 			this._objects = objectsDiff.additions; // TODO: tmp!
 		}
+	}
+
+	updateCameraPosition(position: Vec3) {
+		this._cameraPosition = position;
+	}
+
+	updateCameraUniforms(uniforms: Record<string, any>): void {
+		this._cameraUniforms = uniforms;
 	}
 
 	updateLightUniforms(uniforms: Record<string, any>): void {

@@ -118,6 +118,7 @@ class CameraController extends EventEmitter {
 
 		this._camera.position = newPosition.add(movement);
 
+		this.trigger("change", this._camera);
 		requestAnimationFrame(this._updateCamera);
 	}
 
@@ -145,6 +146,7 @@ class CameraController extends EventEmitter {
 		};
 		this._camera.xAngle = this._startAngleX - newCoordinates.x * this._rotateSpeed;
 		this._camera.yAngle = this._startAngleY - newCoordinates.y * this._rotateSpeed;
+		this.trigger("change", this._camera);
 	}
 
 	private _mouseDownHandler(event: MouseEvent): void {
