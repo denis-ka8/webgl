@@ -70,7 +70,7 @@ class SceneView {
 		this._cameraController = new CameraController(
 			camera,
 			this._glContext,
-			{ cameraSpeed: 10 }
+			{ cameraSpeed: 50 }
 		);
 		this._cameraController.on("change", (camera: Camera) => {
 			// TODO: if renderer

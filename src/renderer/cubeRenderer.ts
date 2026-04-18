@@ -68,7 +68,8 @@ class CubeRenderer extends Renderer {
 
 		// Create geometry
 		const geometryObj = new Geometry({ glContext: gl });
-		const geometrySource = await geometryObj.fetchFromUrl('./assets/geometry/cube.obj');
+		// const geometrySource = await geometryObj.fetchFromUrl('./assets/geometry/cube.obj');
+		const geometrySource = await geometryObj.fetchFromUrl('./assets/geometry/sphere.obj');
 		if (!geometrySource) return;
 		if (!geometryObj.parseSource(geometrySource)) return;
 		const geometryBuffer = geometryObj.create();
@@ -109,7 +110,7 @@ class CubeRenderer extends Renderer {
 
 		metalMaterial.setTexture("normal", normalTexture);
 		metalMaterial.setTexture("ao", aoTexture);
-		metalMaterial.setTexture("roughness", roughnessTexture);
+		// metalMaterial.setTexture("roughness", roughnessTexture);
 
 		normalTexture.bind(0);
 		normalTexture.uploadImage(true);
@@ -117,7 +118,7 @@ class CubeRenderer extends Renderer {
 
 		if (metalMaterial?.isValid()) {
 
-			const textureSlots: TextureSlot[] = ["normal", "ao", "roughness"];
+			const textureSlots: TextureSlot[] = ["normal", "ao"/*, "roughness"*/];
 
 			textureSlots.forEach((slot, index) => {
 				const texture = metalMaterial!.getTexture(slot);
@@ -183,7 +184,7 @@ class CubeRenderer extends Renderer {
 
 		if (this._material?.isValid()) {
 
-			const textureSlots: TextureSlot[] = ["normal", "ao", "roughness"];
+			const textureSlots: TextureSlot[] = ["normal", "ao"/*, "roughness"*/];
 
 			textureSlots.forEach((slot, index) => {
 				const texture = this._material!.getTexture(slot);
@@ -202,8 +203,14 @@ class CubeRenderer extends Renderer {
 		for (let i = 0; i < totalCubes; i++) {
 			const drawable = this._objects[i];
 
-			const uMetallic = 0.1 + (0.8 * i / (totalCubes - 1));
-			const uRoughness = 0.1 + (0.8 * i / (totalCubes - 1));
+			const colIndex = i % 10;
+    		const rowIndex = Math.floor(i / 10);
+
+			let uMetallic = 0.1 + (colIndex * 0.1);
+			let uRoughness = 0.1 + (rowIndex * 0.1);
+			if (uMetallic >= 1) uMetallic = 0.95;
+			if (uRoughness >= 1) uRoughness = 0.95;
+
 			this.setUniforms(this._cubeProgram, {
 				uModelPosition: drawable.model.position,
 				uBaseColor: [ 0.8, 0.8, 0.9 ],

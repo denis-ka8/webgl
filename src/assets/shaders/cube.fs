@@ -20,37 +20,73 @@ uniform float uDirectionalLightIntensity;
 
 uniform vec3 uCameraPosition;
 
+const float PI = 3.14159265359;
+
+float distributionGGX(vec3 N, vec3 H, float roughness) {
+    float a2 = roughness * roughness * roughness * roughness;
+    float NdotH = max(dot(N, H), 0.0);
+    float denom = (NdotH * NdotH * (a2 - 1.0) + 1.0);
+    return a2 / (PI * denom * denom);
+}
+
+float geometrySchlickGGX(float NdotV, float roughness) {
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    return geometrySchlickGGX(max(dot(N, L), 0.0), roughness) *
+           geometrySchlickGGX(max(dot(N, V), 0.0), roughness);
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 vec3 getNormalFromMap() {
-	vec3 tangentNormal = texture2D(uNormalTexture, vTexCoord).xyz * 2.0 - 1.0;
-	tangentNormal.xy = tangentNormal.xy * 2.0 - 1.0;
-	return normalize(vNormal + tangentNormal);
+    vec3 tangentNormal = texture2D(uNormalTexture, vTexCoord).xyz * 2.0 - 1.0;
+    tangentNormal.xy = tangentNormal.xy * 2.0 - 1.0;
+    return normalize(vNormal + tangentNormal);
 }
 
 void main() {
-	vec3 normal = getNormalFromMap();
-	vec3 viewDir = normalize(uCameraPosition - vWorldPos);  // Вектор от фрагмента к камере
-	// vec3 reflectDir = reflect(-viewDir, normal);  // Вектор отражения
-	vec3 lightDir = normalize(-uDirectionalLightDirection);
+    vec3 normal = getNormalFromMap();
+    vec3 viewDir = normalize(uCameraPosition - vWorldPos);
+    vec3 lightDir = normalize(-uDirectionalLightDirection);
 
-	float ao = texture2D(uAoTexture, vTexCoord).r;
-	float roughness = texture2D(uRoughnessTexture, vTexCoord).r;
-	roughness = mix(roughness, uRoughness, 0.5);
+    float ao = texture2D(uAoTexture, vTexCoord).r;
+    float roughness = texture2D(uRoughnessTexture, vTexCoord).r;
+    roughness = mix(roughness, uRoughness, 0.5);
 
-	// Расчёт зеркального отражения
-	vec3 halfwayDir = normalize(lightDir + viewDir);  // Полувектор
-	// float specular = pow(max(dot(reflectDir, normalize(-uDirectionalLightDirection)), 0.0), 32.0 * (1.0 - roughness));
-	float specular = pow(max(dot(normal, halfwayDir), 0.0), 32.0 * (1.0 - roughness));
-	vec3 specularColor = vec3(specular) * uDirectionalLightColor * uMetallic;  // Металлические поверхности отражают цвет света
+    // Базовый коэффициент Френеля: 4 % для диэлектриков, цвет материала для металлов
+    vec3 F0 = mix(vec3(0.04), uBaseColor, uMetallic);
 
-	// Диффузное освещение
-	// float directionalFactor = max(dot(normal, -normalize(uDirectionalLightDirection)), 0.0);
-	float directionalFactor = max(dot(normal, lightDir), 0.0);
-	vec3 ambient = uAmbientLightColor * uAmbientLightIntensity * ao;
-	vec3 directional = uDirectionalLightColor * uDirectionalLightIntensity * directionalFactor;
-	vec3 lighting = ambient + directional;
+    // Полувектор
+    vec3 halfwayDir = normalize(lightDir + viewDir);
 
-	// Финальный цвет: диффузный + зеркальный
-	// vec3 finalColor = uBaseColor * lighting * (1.0 - uMetallic) + vec3(roughness);
-	vec3 finalColor = uBaseColor * lighting * (1.0 - uMetallic) + specularColor;
-	gl_FragColor = vec4(finalColor, 1.0);
+    // Компоненты BRDF
+    float NDF = distributionGGX(normal, halfwayDir, roughness);           // Распределение микрограней (GGX)
+    float G = geometrySmith(normal, viewDir, lightDir, roughness);     // Геометрическое затенение
+    vec3 F = fresnelSchlick(max(dot(halfwayDir, viewDir), 0.0), F0); // Френелевское отражение
+
+    // Расчёт зеркальной составляющей
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0);
+    vec3 specular = numerator / max(denominator, 0.001);
+
+    // Диффузная составляющая: уменьшается для металлов
+    vec3 kD = vec3(1.0) - F;
+    kD *= 1.0 - uMetallic;
+
+    // Диффузное освещение
+    float directionalFactor = max(dot(normal, lightDir), 0.0);
+    vec3 ambient = uAmbientLightColor * uAmbientLightIntensity * ao;
+    vec3 directional = uDirectionalLightColor * uDirectionalLightIntensity * directionalFactor;
+    vec3 lighting = ambient + directional;
+
+    // Финальный цвет: диффузный + зеркальный
+    vec3 finalColor = lighting * (kD * uBaseColor / PI) + specular;
+
+    gl_FragColor = vec4(finalColor, 1.0);
 }
