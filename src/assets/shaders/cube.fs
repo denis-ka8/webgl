@@ -7,6 +7,7 @@ varying vec3 vWorldPos;
 uniform sampler2D uNormalTexture;
 uniform sampler2D uAoTexture;
 uniform sampler2D uRoughnessTexture;
+uniform samplerCube uEnvironmentMap;
 
 uniform vec3 uBaseColor;
 uniform float uMetallic;
@@ -85,7 +86,16 @@ void main() {
     vec3 directional = uDirectionalLightColor * uDirectionalLightIntensity * directionalFactor;
     vec3 lighting = ambient + directional;
 
-    // Финальный цвет: диффузный + зеркальный
+    // Рачсет отражений окружения
+    vec3 reflection = reflect(-viewDir, normal);
+    vec3 environmentColor = textureCube(uEnvironmentMap, reflection).rgb;
+
+    // Смешиваем зеркальную составляющую с отражением окружения
+    // Для металлических поверхностей — больше отражения окружения, для диэлектриков — меньше
+    vec3 envSpecular = environmentColor * mix(0.1, 1.0, uMetallic);
+    specular = mix(specular, envSpecular, mix(0.2, 0.8, uMetallic));
+
+    // Финальный цвет: диффузный + зеркальный + отражения окружения
     vec3 finalColor = lighting * (kD * uBaseColor / PI) + specular;
 
     gl_FragColor = vec4(finalColor, 1.0);

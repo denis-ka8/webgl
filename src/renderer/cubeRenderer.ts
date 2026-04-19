@@ -3,6 +3,8 @@ import Program from "../gl/program";
 import Shader from "../gl/shader";
 import Geometry from "../gl/geometry";
 import GLBuffer from "../gl/buffer";
+import Environment from "../gl/environment";
+import CubeMap from "../gl/cubeMap";
 import Texture from "../gl/texture";
 import Material, { TextureSlot } from "../gl/material";
 import Color from "../utils/color";
@@ -15,7 +17,9 @@ class CubeRenderer extends Renderer {
 	private _cubeTexCoordLocation: number | null = null;
 	private _cubeNormalLocation: number | null = null;
 	private _cubeVertexBuffer: WebGLBuffer | null = null;
+	private _environmentMapLoc: WebGLUniformLocation | null = null;
 	private _indicesBuffer: WebGLBuffer | null = null;
+	private _cubeMap: CubeMap | null = null;
 	private _material: Material | null = null;
 	private _indCount: number = 0;
 	private _inited: boolean = false;
@@ -85,6 +89,22 @@ class CubeRenderer extends Renderer {
 		this._indicesBuffer = indicesBuffer.create();
 		this._indCount = geometryObj.getIndicesCount();
 
+		// Environment
+		const environment = new Environment({ glContext: gl });
+		this._cubeMap = await environment.loadFromPaths([
+			"./assets/textures/px.png",
+			"./assets/textures/nx.png",
+			"./assets/textures/py.png",
+			"./assets/textures/ny.png",
+			"./assets/textures/pz.png",
+			"./assets/textures/nz.png",
+		]);
+		this._environmentMapLoc = gl.getUniformLocation(this._cubeProgram, 'uEnvironmentMap');
+		if (this._environmentMapLoc === null) {
+			console.warn('Uniform uEnvironmentMap not found in shader program');
+		}
+
+
 		// Create materal
 		const metalMaterial = new Material({ glContext: gl });
 		metalMaterial.setBaseColor(new Color(0.8, 0.8, 0.9));
@@ -92,33 +112,37 @@ class CubeRenderer extends Renderer {
 		metalMaterial.setRoughness(0.2);
 
 		// Create texture
-		const normalTexture = new Texture({ glContext: gl });
-		normalTexture.create();
+		// const normalTexture = new Texture({ glContext: gl });
+		// normalTexture.create();
 		// normalTexture.initializeWithDefaults()
 
 		const aoTexture = new Texture({ glContext: gl });
 		aoTexture.create();
 		// aoTexture.initializeWithDefaults()
 
-		const roughnessTexture = new Texture({ glContext: gl });
-		roughnessTexture.create();
+		// const roughnessTexture = new Texture({ glContext: gl });
+		// roughnessTexture.create();
 		// roughnessTexture.initializeWithDefaults()
 
-		await normalTexture.loadFromUrl("./assets/textures/normal.jpg");
+		// await normalTexture.loadFromUrl("./assets/textures/normal.jpg");
 		await aoTexture.loadFromUrl("./assets/textures/ao.jpg");
-		await roughnessTexture.loadFromUrl("./assets/textures/roughness.jpg");
+		// await roughnessTexture.loadFromUrl("./assets/textures/roughness.jpg");
 
-		metalMaterial.setTexture("normal", normalTexture);
+		// metalMaterial.setTexture("normal", normalTexture);
 		metalMaterial.setTexture("ao", aoTexture);
 		// metalMaterial.setTexture("roughness", roughnessTexture);
 
-		normalTexture.bind(0);
-		normalTexture.uploadImage(true);
-		normalTexture.configureTexture();
+		// normalTexture.bind(0);
+		// normalTexture.uploadImage(true);
+		// normalTexture.configureTexture();
 
 		if (metalMaterial?.isValid()) {
 
-			const textureSlots: TextureSlot[] = ["normal", "ao"/*, "roughness"*/];
+			const textureSlots: TextureSlot[] = [
+				// "normal",
+				"ao",
+				// "roughness",
+			];
 
 			textureSlots.forEach((slot, index) => {
 				const texture = metalMaterial!.getTexture(slot);
@@ -184,7 +208,11 @@ class CubeRenderer extends Renderer {
 
 		if (this._material?.isValid()) {
 
-			const textureSlots: TextureSlot[] = ["normal", "ao"/*, "roughness"*/];
+			const textureSlots: TextureSlot[] = [
+				// "normal",
+				"ao",
+				// "roughness",
+			];
 
 			textureSlots.forEach((slot, index) => {
 				const texture = this._material!.getTexture(slot);
@@ -197,6 +225,14 @@ class CubeRenderer extends Renderer {
 					console.warn(`Texture slot '${slot}' is missing or invalid`);
 				}
 			});
+
+			if (this._cubeMap && this._cubeMap.isValid()) {
+				gl.activeTexture(gl.TEXTURE3);
+				gl.bindTexture(gl.TEXTURE_CUBE_MAP, this._cubeMap.getId()!);
+				if (this._environmentMapLoc !== null) {
+					gl.uniform1i(this._environmentMapLoc, 3);
+				}
+			}
 		}
 
 		const totalCubes = this._objects.length;
@@ -210,6 +246,8 @@ class CubeRenderer extends Renderer {
 			let uRoughness = 0.1 + (rowIndex * 0.1);
 			if (uMetallic >= 1) uMetallic = 0.95;
 			if (uRoughness >= 1) uRoughness = 0.95;
+			if (i === 0) uMetallic = 0.01;
+			if (i === 0) uRoughness = 0.01;
 
 			this.setUniforms(this._cubeProgram, {
 				uModelPosition: drawable.model.position,

@@ -16,6 +16,10 @@ class Texture extends Resource {
 		return this._texture;
 	}
 
+	getImage(): HTMLImageElement | null {
+		return this._image;
+	}
+
 	create(): WebGLTexture | null {
     	const gl = this._glContext;
 		this._texture = gl.createTexture();
@@ -51,7 +55,7 @@ class Texture extends Resource {
 	}
 
 	isValid(): boolean {
-		return super.isValid() && this._texture !== null;
+		return super.isValid() && this._texture !== null && this._image !== null;
 	}
 
 	bind(unit: number = 0): this {

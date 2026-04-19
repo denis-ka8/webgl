@@ -22,7 +22,7 @@ abstract class Resource implements IResource {
 
 	constructor(options: ResourceOptions) {
 		if (!options.glContext)
-			throw new Error("Resource::constructor()\n\WebGLRenderingContext is required to create program");
+			throw new Error("Resource::constructor()\n\WebGLRenderingContext is required to create gl resource");
 
 		this._glContext = options.glContext;
 	}

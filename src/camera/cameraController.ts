@@ -6,6 +6,12 @@ const MOVE_KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'] as const;
 
 type KeyType = typeof MOVE_KEYS[number];
 
+enum MouseButton {
+	Left = 0,
+	Center = 1,
+	Right = 2
+};
+
 interface CameraControllerOptions {
 	cameraSpeed?: number;
 }
@@ -86,6 +92,9 @@ class CameraController extends EventEmitter {
 
 		const canvas = this._glContext.canvas;
 		canvas.addEventListener("mousedown", this._handlers.mousedown);
+		canvas.addEventListener('contextmenu', (event) => {
+			event.preventDefault();
+		});
 		window.addEventListener("mousemove", this._handlers.mousemove);
 		window.addEventListener("mouseup", this._handlers.mouseup);
 
@@ -150,10 +159,19 @@ class CameraController extends EventEmitter {
 	}
 
 	private _mouseDownHandler(event: MouseEvent): void {
-		this._isRotating = true;
-		this._rotateStartCoordinates = { x: event.clientX, y: event.clientY };
-		this._startAngleX = this._camera.xAngle;
-		this._startAngleY = this._camera.yAngle;
+		switch (event.button) {
+			case MouseButton.Left: break;
+			case MouseButton.Right: {
+				event.preventDefault();
+				this._isRotating = true;
+				this._rotateStartCoordinates = { x: event.clientX, y: event.clientY };
+				this._startAngleX = this._camera.xAngle;
+				this._startAngleY = this._camera.yAngle;
+				break;
+			}
+			case MouseButton.Center: break;
+			default: break;
+		}
 	}
 
 	private _mouseUpHandler(event: MouseEvent): void {
