@@ -33,6 +33,11 @@ class Shader extends Resource {
 	}
 
 	create(): WebGLShader | null {
+		if (!this._source) {
+			console.error("Shader::create()\n\tShader source is required");
+			return false;
+		}
+
 		const gl = this._glContext;
 		this._shader = gl.createShader(this._shaderType);
 		if (!this._shader) {
@@ -64,16 +69,16 @@ class Shader extends Resource {
 		}
 	}
 
-	compile(source: string): boolean {
-		if (!source) {
-			console.error("Shader::compile()\n\tShader source is required");
-			return false;
-		}
+	// compile(source: string): boolean {
+	// 	if (!source) {
+	// 		console.error("Shader::compile()\n\tShader source is required");
+	// 		return false;
+	// 	}
 
-		this._source = source;
-		const compiledShader = this.create();
-		return compiledShader !== null;
-	}
+	// 	this._source = source;
+	// 	const compiledShader = this.create();
+	// 	return compiledShader !== null;
+	// }
 
 	isValid(): boolean {
 		return super.isValid() && this._shader !== null;
@@ -88,7 +93,10 @@ class Shader extends Resource {
 
 		try {
 			const response = await fetch(url);
-			if (response.ok) return await response.text();
+			if (response.ok) {
+				this._source = await response.text();
+				return this._source || null;
+			}
 
 			throw new Error(`Status: ${response.status}, ${response.statusText}`);
 		} catch (error: unknown) {

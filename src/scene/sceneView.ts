@@ -10,6 +10,7 @@ import Camera from "../models/camera/camera";
 import BaseModel from "../models/model";
 import Color from "../utils/color";
 import CubeRenderer from "../renderer/cubeRenderer";
+import PointRenderer from "../renderer/pointRenderer";
 import { vec3, Vec3 } from "../math/vec3";
 
 const AMBIENT_LIGHT = {
@@ -27,6 +28,7 @@ class SceneView {
 
 	private _sceneModel: BaseModel;
 	private _renderer: CubeRenderer;
+	private _pointRenderer: PointRenderer;
 	private _glContext: WebGLRenderingContext;
 	private _cameraController: CameraController | null = null;
 	private _drawableObjects: Map<number, Drawable> = new Map(); // Map of modelId to drawable object
@@ -36,9 +38,10 @@ class SceneView {
 	private _lightUniforms: Record<string, any> = {};
 	private _cameraUniforms: Record<string, any> = {};
 
-	constructor(sceneModel: BaseModel, renderer: CubeRenderer, glContext: WebGLRenderingContext) {
+	constructor(sceneModel: BaseModel, renderer: CubeRenderer, pointRenderer: PointRenderer, glContext: WebGLRenderingContext) {
 		this._sceneModel = sceneModel;
 		this._renderer = renderer;
+		this._pointRenderer = pointRenderer;
 		this._glContext = glContext;
 
 		this._sceneModel.on('objectAdded', this._onObjectAdded.bind(this));
@@ -66,6 +69,10 @@ class SceneView {
 
 	get model(): BaseModel { return this._sceneModel; }
 
+	pickObject(x: number, y: number): Drawable | null {
+		return null;
+	}
+
 	_initializeCameraController(camera: Camera): void {
 		this._cameraController = new CameraController(
 			camera,
@@ -79,14 +86,21 @@ class SceneView {
 				uViewMatrix: camera.getViewMatrix(),
 			});
 			this._renderer.updateCameraPosition(camera.position);
+
+			this._pointRenderer.updateCameraUniforms({
+				uProjectionMatrix: camera.getProjectionMatrix(),
+				uViewMatrix: camera.getViewMatrix(),
+			});
+			this._pointRenderer.updateCameraPosition(camera.position);
 		});
 		this._cameraController.listen();
 
 		this._renderer.setCamera(camera);
+		this._pointRenderer.setCamera(camera);
 	}
 
 	_createDrawable(model: BaseModel): number | null {
-		let drawable;
+		let drawable: Drawable | null = null;
 		switch (model.constructor.name) {
 			case 'CubeModel':
 				drawable = new CubeDrawable({ model });
@@ -200,12 +214,15 @@ class SceneView {
 
 		this._renderer.updateSceneObjects(objectsDiff);
 		this._renderer.render();
+
+		this._pointRenderer.render();
 	}
 
 	resize(width: number, height: number): void {
 		this._glContext.canvas.width = width;
 		this._glContext.canvas.height = height;
 		this._renderer.setSize(width, height);
+		this._pointRenderer.setSize(width, height);
 	}
 }
 

@@ -1,6 +1,7 @@
 import SceneModel from "./sceneModel";
 import SceneView from "./sceneView";
 import CubeRenderer from "../renderer/cubeRenderer";
+import PointRenderer from "../renderer/pointRenderer";
 import Camera from "../models/camera/camera";
 import CubeModel from "../models/cubeModel";
 import DirectionalLight from "../models/light/directionalLight";
@@ -18,6 +19,7 @@ class SceneManager {
 	private _glContext: WebGLRenderingContext;
 	private _sceneModel: SceneModel;
 	private _renderer: CubeRenderer;
+	private _pointRenderer: PointRenderer;
 	private _sceneView: SceneView;
 	private _isRunning: boolean = false;
 
@@ -29,15 +31,20 @@ class SceneManager {
 			throw new Error('WebGL not supported');
 		}
 
+		this._canvas.addEventListener('click', this._handleClick.bind(this));
+
 		this._sceneModel = new SceneModel();
 		this._renderer = new CubeRenderer({ glContext: this._glContext });
-		this._sceneView = new SceneView(this._sceneModel, this._renderer, this._glContext);
+		this._pointRenderer = new PointRenderer({ glContext: this._glContext });
+		this._sceneView = new SceneView(this._sceneModel, this._renderer, this._pointRenderer, this._glContext);
 	}
 	
 	initialize(): void {
 		this._createCamera();
 		this._createGlobalLight();
 		this._createCubes();
+
+		this._createAxesPoints();
 	}
 
 	start(): void {
@@ -102,6 +109,27 @@ class SceneManager {
 			}
 		}
 	}
+
+	private _createAxesPoints(): void {
+		const testPoints = [ vec3() ];
+		for (let i=1; i<10; i++) {
+			testPoints.push(vec3(12*i, 0, 0), vec3(0, 12*i, 0), vec3(0, 0, 12*i))
+		}
+		for (const point of testPoints)
+			this._pointRenderer.addPoint(point);
+	}
+
+	private _handleClick(event: MouseEvent): void {
+        const rect = this._canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const pickedObject = this._sceneView.pickObject(x, y);
+        if (pickedObject) {
+            console.log('Выбран объект:', pickedObject);
+            // Здесь можно добавить реакцию: подсветка, UI и т. д.
+        }
+    }
 }
 
 export default SceneManager;

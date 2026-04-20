@@ -35,6 +35,8 @@ class Renderer implements IRenderer {
 	protected _cameraUniforms: Record<string, any> = {};
 	protected _lightUniforms: Record<string, any> = {};
 
+	private _isInitialized: boolean = false;
+
 	constructor(options: RendererOptions) {
 		this._glContext = options.glContext;
 
@@ -62,6 +64,14 @@ class Renderer implements IRenderer {
 	protected async _initResources(): Promise<void> {
 		// Override in subclass to initialize shaders, buffers, etc.
 	}
+
+	get isInitialized(): boolean {
+        return this._isInitialized;
+    }
+
+    protected setInitialized(value: boolean): void {
+        this._isInitialized = value;
+    }
 
 	setCamera(camera: Camera): void {
 		this._camera = camera;

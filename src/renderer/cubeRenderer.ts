@@ -22,7 +22,6 @@ class CubeRenderer extends Renderer {
 	private _cubeMap: CubeMap | null = null;
 	private _material: Material | null = null;
 	private _indCount: number = 0;
-	private _inited: boolean = false;
 
 	constructor(options: RendererOptions) {
 		super(options);
@@ -42,22 +41,12 @@ class CubeRenderer extends Renderer {
 
 		// Create shaders
 		const vsCubeResource = new Shader({ glContext: gl, shaderType: gl.VERTEX_SHADER });
-		const vsCubeSource = await vsCubeResource.fetchFromUrl('./assets/shaders/cube.vs');
-		if (!vsCubeSource) {
-			console.error('CubeRenderer::_initResources() - Failed to load vertex shader source');
-			return;
-		}
-		vsCubeResource.compile(vsCubeSource);
+		await vsCubeResource.fetchFromUrl('./assets/shaders/cube.vs');
 		const cubeVertexShader = vsCubeResource.create();
 		if (!cubeVertexShader) return;
 
 		const fsCubeResource = new Shader({ glContext: gl, shaderType: gl.FRAGMENT_SHADER });
-		const fsCubeSource = await fsCubeResource.fetchFromUrl('./assets/shaders/cube.fs');
-		if (!fsCubeSource) {
-			console.error('CubeRenderer::_initResources() - Failed to load fragment shader source');
-			return;
-		}
-		fsCubeResource.compile(fsCubeSource);
+		await fsCubeResource.fetchFromUrl('./assets/shaders/cube.fs');
 		const cubeFragmentShader = fsCubeResource.create();
 		if (!cubeFragmentShader) return;
 
@@ -159,13 +148,11 @@ class CubeRenderer extends Renderer {
 
 		this._material = metalMaterial;
 
-		this._inited = true;
+		this.setInitialized(true);
 	}
 
 	render(): void {
-		// TODO: realize resource ready state and render only when resources are loaded
-		if (!this._camera) return; // Resources not initialized yet
-		if (!this._inited) return; // Resources not initialized yet
+		if (!this.isInitialized || !this._camera) return;
 
 		const gl = this._glContext;
 

@@ -48,6 +48,24 @@ class Vec3 extends Vec {
 		return this.x * v.x + this.y * v.y + this.z * v.z;
 	}
 
+	normalize(): Vec3 {
+		const length = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+		if (length === 0) {
+			this.x = 0;
+			this.y = 0;
+			this.z = 0;
+		} else {
+			this.x /= length;
+			this.y /= length;
+			this.z /= length;
+		}
+		return this;
+	}
+
+	toArray(): number[] {
+		return [ this.x, this.y, this.z ];
+	}
+
 	// TODO: add methods for vector operations (add, subtract, dot product, cross product, etc.)
 }
 

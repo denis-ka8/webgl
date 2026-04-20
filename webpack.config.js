@@ -1,5 +1,5 @@
 const path = require('path');
-// const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
@@ -8,11 +8,8 @@ module.exports = {
 	output: {
 		filename: 'bundle.js',
 		path: path.resolve(__dirname, 'dist'),
-		// assetModuleFilename: 'assets/[name][ext]'
 	},
-	// plugins: [new HtmlWebpackPlugin()],
 	devtool: 'eval-source-map',
-	mode: 'development',
 	devServer: {
 		static: {
 			directory: path.join(__dirname, 'dist'),
@@ -24,9 +21,12 @@ module.exports = {
 		new CopyPlugin({
 			patterns: [{ from: 'src/assets', to: 'assets' }],
 		}),
+		new HtmlWebpackPlugin({
+			template: './src/index.html',
+		}),
 	],
 	resolve: {
-		extensions: ['.tsx', '.ts', '.js'], // порядок разрешения расширений
+		extensions: ['.tsx', '.ts', '.js'],
 	},
 	module: {
 		rules: [
