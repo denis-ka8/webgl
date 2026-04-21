@@ -140,26 +140,7 @@ class SceneManager {
         } else {
 			console.log('Empty!');
 		}
-		// this._showPickingMap(rect);
     }
-
-	/* picking map
-	_showPickingMap(rect: any): void {
-		const ctx = this._canvas2!.getContext('2d')!;
-
-		// const width = this._canvas2!.width;
-		// const height = this._canvas2!.height;
-
-		for (let y = 0; y < rect.height; y++) {
-			for (let x = 0; x < rect.width; x++) {
-				const pickedObject = this._sceneView.pickObject(x, y);
-				if (pickedObject) ctx.fillStyle = `rgb(255,0,0)`;
-				else ctx.fillStyle = `rgb(255,255,255)`;
-				ctx.fillRect(x, y, 1, 1);
-			}
-		}
-	}
-	*/
 }
 
 export default SceneManager;
