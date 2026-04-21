@@ -69,17 +69,6 @@ class Shader extends Resource {
 		}
 	}
 
-	// compile(source: string): boolean {
-	// 	if (!source) {
-	// 		console.error("Shader::compile()\n\tShader source is required");
-	// 		return false;
-	// 	}
-
-	// 	this._source = source;
-	// 	const compiledShader = this.create();
-	// 	return compiledShader !== null;
-	// }
-
 	isValid(): boolean {
 		return super.isValid() && this._shader !== null;
 	}

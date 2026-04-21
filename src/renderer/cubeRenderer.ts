@@ -161,6 +161,9 @@ class CubeRenderer extends Renderer {
 		// gl.enable(gl.CULL_FACE);
 		gl.enable(gl.DEPTH_TEST);
 
+		this._updateFPS();
+		this._displayFPS();
+
 		// TODO: realize isValid()
 		if (this._cubeProgram == null) return;
 		if (this._cubePositionLocation == null) return;

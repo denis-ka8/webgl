@@ -37,6 +37,11 @@ class Renderer implements IRenderer {
 
 	private _isInitialized: boolean = false;
 
+	// FPS
+    private _frameCount: number = 0;
+    private _lastFPSUpdate: number = performance.now();
+    private _currentFPS: number = 0;
+
 	constructor(options: RendererOptions) {
 		this._glContext = options.glContext;
 
@@ -153,6 +158,40 @@ class Renderer implements IRenderer {
 	
 	drawElements(mode: number, count: number, type: number, offset: number): void {
 		this._glContext.drawElements(mode, count, type, offset);
+	}
+
+	get fps(): number {
+        return this._currentFPS;
+    }
+
+	protected _updateFPS(): void {
+        const now = performance.now();
+        this._frameCount++;
+
+        if (now - this._lastFPSUpdate >= 1000) {
+            this._currentFPS = Math.round(this._frameCount * 1000 / (now - this._lastFPSUpdate));
+            this._frameCount = 0;
+            this._lastFPSUpdate = now;
+        }
+	}
+
+	protected _displayFPS(): void {
+		let fpsElement = document.getElementById('fps-counter');
+
+		if (!fpsElement) {
+			fpsElement = document.createElement('div');
+			fpsElement.id = 'fps-counter';
+			fpsElement.style.cssText = `
+				position: absolute;
+				top: 10px;
+				left: 10px;
+				color: white;
+				font-family: 'Courier New', Courier, monospace;
+			`;
+			document.body.appendChild(fpsElement);
+		}
+
+		fpsElement.textContent = `FPS: ${this.fps}`;
 	}
 
 	render(): void {

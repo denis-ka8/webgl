@@ -8,10 +8,13 @@ import PointLight from "../models/light/pointLight";
 import SpotLight from "../models/light/spotLight";
 import Camera from "../models/camera/camera";
 import BaseModel from "../models/model";
+import MeshModel from "../models/meshModel";
 import Color from "../utils/color";
 import CubeRenderer from "../renderer/cubeRenderer";
 import PointRenderer from "../renderer/pointRenderer";
 import { vec3, Vec3 } from "../math/vec3";
+import Ray from "../math/ray";
+import { m4 } from "../math/m4";
 
 const AMBIENT_LIGHT = {
 	color: Color.white().toRGBArray(),
@@ -19,6 +22,15 @@ const AMBIENT_LIGHT = {
 }
 
 type LightType = DirectionalLight | PointLight | SpotLight;
+
+// TODO: TMP! REFAC!
+type Vec4 = [number, number, number, number];
+type Mat4 = [
+	number, number, number, number,
+	number, number, number, number,
+	number, number, number, number,
+	number, number, number, number
+];
 
 /**
  * SceneView is responsible for managing the camera and the list of drawables in the scene.
@@ -69,10 +81,6 @@ class SceneView {
 
 	get model(): BaseModel { return this._sceneModel; }
 
-	pickObject(x: number, y: number): Drawable | null {
-		return null;
-	}
-
 	_initializeCameraController(camera: Camera): void {
 		this._cameraController = new CameraController(
 			camera,
@@ -80,18 +88,18 @@ class SceneView {
 			{ cameraSpeed: 50 }
 		);
 		this._cameraController.on("change", (camera: Camera) => {
-			// TODO: if renderer
-			this._renderer.updateCameraUniforms({
+			this._cameraUniforms = {
 				uProjectionMatrix: camera.getProjectionMatrix(),
 				uViewMatrix: camera.getViewMatrix(),
-			});
-			this._renderer.updateCameraPosition(camera.position);
-
-			this._pointRenderer.updateCameraUniforms({
-				uProjectionMatrix: camera.getProjectionMatrix(),
-				uViewMatrix: camera.getViewMatrix(),
-			});
-			this._pointRenderer.updateCameraPosition(camera.position);
+			};
+			if (this._renderer) {
+				this._renderer.updateCameraUniforms(this._cameraUniforms);
+				this._renderer.updateCameraPosition(camera.position);
+			}
+			if (this._pointRenderer) {
+				this._pointRenderer.updateCameraUniforms(this._cameraUniforms);
+				this._pointRenderer.updateCameraPosition(camera.position);
+			}
 		});
 		this._cameraController.listen();
 
@@ -223,7 +231,91 @@ class SceneView {
 		this._glContext.canvas.height = height;
 		this._renderer.setSize(width, height);
 		this._pointRenderer.setSize(width, height);
+		if (this._cameraController) {
+			this._cameraUniforms = {
+				uProjectionMatrix: this._cameraController.camera.getProjectionMatrix(),
+				uViewMatrix: this._cameraController.camera.getViewMatrix(),
+			};
+			if (this._renderer) this._renderer.updateCameraUniforms(this._cameraUniforms);
+			if (this._pointRenderer) this._pointRenderer.updateCameraUniforms(this._cameraUniforms);
+		}
 	}
+
+	pickObject(x: number, y: number): Drawable | null {
+        const ray = this._createRayFromScreen(x, y);
+
+        let closestObject: Drawable | null = null;
+        let closestDistance = Infinity;
+
+        for (const drawable of this._drawableObjects.values()) {
+			if (!drawable.model) continue;
+			const model = drawable.model as MeshModel;
+            const distance = ray.intersectSphere(model.position, 1);
+            if (distance !== null && distance < closestDistance) {
+                closestDistance = distance;
+                closestObject = drawable;
+            }
+        }
+
+        return closestObject;
+	}
+
+	// TODO: TMP! REFAC!
+    private _createRayFromScreen(screenX: number, screenY: number): Ray {
+        const gl = this._glContext;
+        const canvas = gl.canvas as HTMLCanvasElement;
+
+        // Нормализуем координаты в диапазон [-1, 1]
+        const normalizedX = (screenX / canvas.width) * 2 - 1;
+        const normalizedY = 1 - (screenY / canvas.height) * 2; // Инвертируем Y
+
+        // Создаём точки на ближней и дальней плоскостях
+        const nearPoint = this._unproject(normalizedX, normalizedY, 0);
+        const farPoint = this._unproject(normalizedX, normalizedY, 1);
+
+        // Направление луча
+        const direction = Vec3.subtract(farPoint, nearPoint);
+		direction.normalize();
+
+        return new Ray(nearPoint, direction);
+    }
+
+    private _unproject(x: number, y: number, z: number): Vec3 {
+		if (!this._cameraController) return vec3();
+
+		const camera: Camera = this._cameraController.camera;
+        const viewMatrix = camera.getViewMatrix();
+        const projectionMatrix = camera.getProjectionMatrix();
+
+        // Объединяем матрицы
+        const mvp = m4.multiply(projectionMatrix, viewMatrix);
+        const invMvp = m4.inverse(mvp) as Mat4;
+
+        // Преобразуем нормализованные координаты в мировые
+        const clip = [x, y, z, 1] as Vec4;
+        const world = this._transformMat4(clip, invMvp);
+
+		// Perspective divide
+		if (world[3] !== 0 && Math.abs(world[3]) > 1e-6) {
+			const w = world[3];
+			world[0] /= w;
+			world[1] /= w;
+			world[2] /= w;
+		}
+
+		return vec3(world[0], world[1], world[2]);
+    }
+
+    private _transformMat4(a: Vec4, m: Mat4): Vec4 {
+		const [x, y, z, w] = a;
+
+        return [
+            m[0] * x + m[4] * y + m[8] * z + m[12] * w,
+            m[1] * x + m[5] * y + m[9] * z + m[13] * w,
+            m[2] * x + m[6] * y + m[10] * z + m[14] * w,
+            m[3] * x + m[7] * y + m[11] * z + m[15] * w
+        ];
+    }
 }
 
 export default SceneView;
