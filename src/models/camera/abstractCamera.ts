@@ -48,12 +48,14 @@ export abstract class AbstractCamera extends BaseModel implements ICamera {
         super(options)
         this._position = options.position || vec3(1, 1, 1);
         this._target = options.target || vec3(0, 0, 0);
-        this.fov = options.fov ?? 60;
-        this.aspect = options.aspect ?? 1;
-        this.near = options.near ?? 0.1;
-        this.far = options.far ?? 10000;
-        this.xAngle = options.xAngle ?? 0;
-        this.yAngle = options.yAngle ?? 0;
+        this._fov = options.fov ?? 60;
+        this._aspect = options.aspect ?? 1;
+        this._near = options.near ?? 0.1;
+        this._far = options.far ?? 10000;
+        this._xAngle = options.xAngle ?? 0;
+        this._yAngle = options.yAngle ?? 0;
+        this._xAngleRad = MathConverter.degreesToRadians(this._xAngle);
+        this._yAngleRad = MathConverter.degreesToRadians(this._yAngle);
     }
 
     get position(): Vec3 { return this._position; }

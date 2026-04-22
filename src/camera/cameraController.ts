@@ -1,4 +1,5 @@
 import EventEmitter from "../utils/eventEmitter";
+import { Vec2, vec2 } from "../math/vec2";
 import { Vec3, vec3 } from "../math/vec3";
 import Camera from "../models/camera/camera";
 
@@ -16,6 +17,14 @@ interface CameraControllerOptions {
 	cameraSpeed?: number;
 }
 
+interface IEventHandlers {
+	keydown(event: KeyboardEvent): void;
+	keyup(event: KeyboardEvent): void;
+	mousemove(event: Event): void;
+	mousedown(event: Event): void;
+	mouseup(event: Event): void;
+};
+
 class CameraController extends EventEmitter {
 
 	private _camera: Camera;
@@ -32,18 +41,12 @@ class CameraController extends EventEmitter {
 	};
 	private _isMoving: boolean = false;
 	private _isRotating: boolean = false;
-	private _rotateStartCoordinates: { x: number; y: number };
+	private _rotateStartCoordinates: Vec2 = vec2();
 	private _startAngleX: number = 0;
 	private _startAngleY: number = 0;
 	private _lastFrameTime: number | null = null;
 
-	private _handlers: {
-		keydown: (event: KeyboardEvent) => void;
-		keyup: (event: KeyboardEvent) => void;
-		mousemove: (event: MouseEvent) => void;
-		mousedown: (event: MouseEvent) => void;
-		mouseup: (event: MouseEvent) => void;
-	};
+	private _handlers: IEventHandlers;
 
 	/**
 	 * @param {Camera} camera 
@@ -164,7 +167,7 @@ class CameraController extends EventEmitter {
 			case MouseButton.Right: {
 				event.preventDefault();
 				this._isRotating = true;
-				this._rotateStartCoordinates = { x: event.clientX, y: event.clientY };
+				this._rotateStartCoordinates = vec2(event.clientX, event.clientY);
 				this._startAngleX = this._camera.xAngle;
 				this._startAngleY = this._camera.yAngle;
 				break;

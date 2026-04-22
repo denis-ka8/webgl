@@ -34,7 +34,7 @@
 		// "noPropertyAccessFromIndexSignature": true,
 
 		// Recommended Options
-		"strict": false, // TODO: true
+		"strict": true,
 		"jsx": "react-jsx",
 		"verbatimModuleSyntax": false,
 		"isolatedModules": true,

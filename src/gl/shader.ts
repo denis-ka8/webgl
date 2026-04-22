@@ -13,7 +13,7 @@ class Shader extends Resource {
 
 	private _shaderType: ShaderType;
 	private _shader: WebGLShader | null = null;
-	private _source: string;
+	declare private _source: string;
 
 	constructor(options: ShaderOptions) {
 		super(options);

@@ -20,7 +20,7 @@ abstract class Light extends BaseModel {
 	protected _color: Color;
 	protected _intensity: number;
 	protected _position: Vec3;
-	protected _type: LightType;
+	declare protected _type: LightType;
 
 	constructor(options: LightOptions = {}) {
 		super(options);

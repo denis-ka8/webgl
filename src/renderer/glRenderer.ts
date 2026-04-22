@@ -27,7 +27,7 @@ export interface IRenderer {
 class Renderer implements IRenderer {
 
 	protected _glContext: WebGLRenderingContext;
-	protected _camera: Camera;
+	declare protected _camera: Camera;
 	// TODO:
 	protected _objects: any[] = [];
 
