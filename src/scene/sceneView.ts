@@ -125,7 +125,7 @@ class SceneView {
 
 	// Scene model event handlers
 	_onObjectAdded(object: BaseModel): void {
-		object.on("modelUpdated", (param, value) => {
+		object.on("modelUpdated", (param: string, value: any) => {
 			this._onObjectUpdated(object, param, value);
 		});
 		const id = this._createDrawable(object);
@@ -153,7 +153,7 @@ class SceneView {
 	_onCameraRemoved(camera: Camera): void {}
 	
 	_onLightAdded(light: LightType): void {
-		light.on("modelUpdated", (param, value) => {
+		light.on("modelUpdated", (param: string, value: any) => {
 			this._onLightUpdated(param, value);
 		});
 

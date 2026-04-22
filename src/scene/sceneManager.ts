@@ -26,8 +26,8 @@ class SceneManager {
 	private _renderer: CubeRenderer;
 	private _pointRenderer: PointRenderer;
 	private _sceneView: SceneView;
-	private _camera: Camera;
 	private _isRunning: boolean = false;
+	declare private _camera: Camera;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this._canvas = canvas;

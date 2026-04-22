@@ -21,4 +21,4 @@ function vec2(x: number = 0, y: number = 0): Vec2 {
 	return new Vec2(x, y);
 }
 
-export { vec2 };
+export { Vec2, vec2 };
