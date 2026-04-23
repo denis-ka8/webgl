@@ -11,6 +11,7 @@ export interface DrawableOptions {
 class Drawable {
 
 	protected _model: BaseModel | null;
+	private _visible: boolean = true;
 
 	constructor(options: DrawableOptions = {}) {
 		this._model = options.model ?? null;
@@ -22,6 +23,14 @@ class Drawable {
 
 	set model(value: BaseModel | null) {
 		this._model = value;
+	}
+
+	get visible(): boolean {
+		return this._visible;
+	}
+
+	set visible(value: boolean) {
+		this._visible = value;
 	}
 }
 

@@ -8,7 +8,6 @@ interface BufferOptions extends ResourceOptions {
 class GLBuffer extends Resource {
 
 	private _buffer: WebGLBuffer | null = null;
-	private _data: ArrayBuffer | ArrayBufferView | ArrayBufferLike | null = null;
 	private readonly _type: number;
 	private readonly _usage: number;
 
@@ -19,9 +18,9 @@ class GLBuffer extends Resource {
 	}
 
 	create(): WebGLBuffer | null {
-		if (!this._data) {
-			console.error("Buffer::create()\n\tData is required to create buffer");
-			return null;
+		if (this._buffer) {
+			console.warn("Buffer::create()\n\tBuffer already created");
+			return this._buffer;
 		}
 
 		const gl = this._glContext;
@@ -31,25 +30,23 @@ class GLBuffer extends Resource {
 			return null;
 		}
 
-		gl.bindBuffer(this._type, this._buffer);
-		gl.bufferData(this._type, this._data, this._usage);
-
 		this.setId(this._buffer);
-
 		return this._buffer;
 	}
 
 	setData(data: ArrayBuffer | ArrayBufferView | ArrayBufferLike): void {
-		this._data = data;
+		if (!this.isValid()) {
+			console.error("Buffer::setData()\n\tCannot set data: buffer is not valid");
+			return;
+		}
+
+		const gl = this._glContext;
+		gl.bindBuffer(this._type, this._buffer);
+		gl.bufferData(this._type, data, this._usage);
 	}
 
-	protected _destroyGLResource(resource: WebGLResourceId): void {
-		const gl = this._glContext;
-		if (resource instanceof WebGLBuffer) {
-			gl.deleteBuffer(resource);
-		} else {
-			console.warn("Buffer::_destroyGLResource()\n\tInvalid resource type");
-		}
+	updateData(data: ArrayBuffer | ArrayBufferView | ArrayBufferLike): void {
+		this.setData(data);
 	}
 
 	bind(type: number = this._type): void {
@@ -57,6 +54,7 @@ class GLBuffer extends Resource {
 			console.error("Buffer::bind()\n\tCannot bind buffer: resource is not valid");
 			return;
 		}
+
 		const gl = this._glContext;
 		gl.bindBuffer(type, this._buffer);
 	}
@@ -64,6 +62,16 @@ class GLBuffer extends Resource {
 	unbind(type: number = this._type): void {
 		const gl = this._glContext;
 		gl.bindBuffer(type, null);
+	}
+
+	protected _destroyGLResource(resource: WebGLResourceId): void {
+		const gl = this._glContext;
+		if (resource instanceof WebGLBuffer) {
+			gl.deleteBuffer(resource);
+			return;
+		}
+
+		console.warn("Buffer::_destroyGLResource()\n\tInvalid resource type");
 	}
 }
 

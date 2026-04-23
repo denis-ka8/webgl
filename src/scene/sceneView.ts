@@ -1,5 +1,5 @@
 
-import CameraController from "../camera/cameraController";
+import CameraController from "../controllers/cameraController";
 import Drawable from "../drawables/drawable";
 import CubeDrawable from "../drawables/mesh/cubeDrawable";
 import Light from "../models/light/light";
@@ -11,10 +11,11 @@ import BaseModel from "../models/model";
 import MeshModel from "../models/meshModel";
 import Color from "../utils/color";
 import CubeRenderer from "../renderer/cubeRenderer";
-import PointRenderer from "../renderer/pointRenderer";
+import GizmosRenderer from "../renderer/gizmosRenderer";
 import { vec3, Vec3 } from "../math/vec3";
-import Ray from "../math/ray";
+import { Ray } from "../math/ray";
 import { m4 } from "../math/m4";
+import GizmosDrawable from "../drawables/gizmosDrawable";
 
 const AMBIENT_LIGHT = {
 	color: Color.white().toRGBArray(),
@@ -40,7 +41,7 @@ class SceneView {
 
 	private _sceneModel: BaseModel;
 	private _renderer: CubeRenderer;
-	private _pointRenderer: PointRenderer;
+	private _gizmosRenderer: GizmosRenderer | null = null;
 	private _glContext: WebGLRenderingContext;
 	private _cameraController: CameraController | null = null;
 	private _drawableObjects: Map<number, Drawable> = new Map(); // Map of modelId to drawable object
@@ -50,10 +51,10 @@ class SceneView {
 	private _lightUniforms: Record<string, any> = {};
 	private _cameraUniforms: Record<string, any> = {};
 
-	constructor(sceneModel: BaseModel, renderer: CubeRenderer, pointRenderer: PointRenderer, glContext: WebGLRenderingContext) {
+	constructor(sceneModel: BaseModel, renderer: CubeRenderer, /*gizmosRenderer: GizmosRenderer, */glContext: WebGLRenderingContext) {
 		this._sceneModel = sceneModel;
 		this._renderer = renderer;
-		this._pointRenderer = pointRenderer;
+		// this._gizmosRenderer = gizmosRenderer;
 		this._glContext = glContext;
 
 		this._sceneModel.on('objectAdded', this._onObjectAdded.bind(this));
@@ -81,6 +82,21 @@ class SceneView {
 
 	get model(): BaseModel { return this._sceneModel; }
 
+	addGizmosRenderer(gizmosRenderer: GizmosRenderer): void {
+		this._gizmosRenderer = gizmosRenderer;
+		if (!this._cameraController) return;
+
+		const camera: Camera = this._cameraController.camera
+		this._gizmosRenderer.setCamera(camera);
+		this._gizmosRenderer.updateCameraUniforms(this._cameraUniforms);
+		this._gizmosRenderer.updateCameraPosition(camera.position);
+	}
+
+	addGizmosDrawable(gizmosDrawable: GizmosDrawable): void {
+		if (!this._gizmosRenderer) return;
+		this._gizmosRenderer.addGizmos(gizmosDrawable);
+	}
+
 	_initializeCameraController(camera: Camera): void {
 		this._cameraController = new CameraController(
 			camera,
@@ -96,15 +112,14 @@ class SceneView {
 				this._renderer.updateCameraUniforms(this._cameraUniforms);
 				this._renderer.updateCameraPosition(camera.position);
 			}
-			if (this._pointRenderer) {
-				this._pointRenderer.updateCameraUniforms(this._cameraUniforms);
-				this._pointRenderer.updateCameraPosition(camera.position);
+			if (this._gizmosRenderer) {
+				this._gizmosRenderer.updateCameraUniforms(this._cameraUniforms);
+				this._gizmosRenderer.updateCameraPosition(camera.position);
 			}
 		});
 		this._cameraController.listen();
 
 		this._renderer.setCamera(camera);
-		this._pointRenderer.setCamera(camera);
 	}
 
 	_createDrawable(model: BaseModel): number | null {
@@ -223,21 +238,21 @@ class SceneView {
 		this._renderer.updateSceneObjects(objectsDiff);
 		this._renderer.render();
 
-		this._pointRenderer.render();
+		if (this._gizmosRenderer) this._gizmosRenderer.render();
 	}
 
 	resize(width: number, height: number): void {
 		this._glContext.canvas.width = width;
 		this._glContext.canvas.height = height;
 		this._renderer.setSize(width, height);
-		this._pointRenderer.setSize(width, height);
+		if (this._gizmosRenderer) this._gizmosRenderer.setSize(width, height);
 		if (this._cameraController) {
 			this._cameraUniforms = {
 				uProjectionMatrix: this._cameraController.camera.getProjectionMatrix(),
 				uViewMatrix: this._cameraController.camera.getViewMatrix(),
 			};
 			if (this._renderer) this._renderer.updateCameraUniforms(this._cameraUniforms);
-			if (this._pointRenderer) this._pointRenderer.updateCameraUniforms(this._cameraUniforms);
+			if (this._gizmosRenderer) this._gizmosRenderer.updateCameraUniforms(this._cameraUniforms);
 		}
 	}
 

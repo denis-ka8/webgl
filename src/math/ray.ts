@@ -10,6 +10,14 @@ class Ray {
         this._direction = direction.copy().normalize();
     }
 
+    get origin(): Vec3 {
+        return this._origin;
+    }
+
+    get direction(): Vec3 {
+        return this._direction;
+    }
+
     intersectSphere(center: Vec3, radius: number): number | null {
         // Вектор от начала луча до центра сферы
         // const L = Vec3.subtract(vec3(), center, this._origin);
@@ -38,4 +46,8 @@ class Ray {
     }
 }
 
-export default Ray;
+function ray(origin: Vec3, direction: Vec3): Ray {
+	return new Ray(origin, direction);
+}
+
+export { Ray, ray };

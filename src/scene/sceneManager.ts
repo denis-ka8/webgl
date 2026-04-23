@@ -1,15 +1,16 @@
 import SceneModel from "./sceneModel";
 import SceneView from "./sceneView";
 import CubeRenderer from "../renderer/cubeRenderer";
-import PointRenderer from "../renderer/pointRenderer";
+import GizmosRenderer from "../renderer/gizmosRenderer";
 import Camera from "../models/camera/camera";
 import CubeModel from "../models/cubeModel";
 import DirectionalLight from "../models/light/directionalLight";
 import { vec3 } from "../math/vec3";
+import { Ray, ray } from "../math/ray";
 import MeshDrawable from "../drawables/meshDrawable";
-import Drawable from "../drawables/drawable";
 import MeshModel from "../models/meshModel";
-import BaseModel from "../models/model";
+import GizmosController from "../controllers/gizmosController";
+import GizmosDrawable from "../drawables/gizmosDrawable";
 
 /**
  * SceneManager is responsible for managing the scene,
@@ -22,9 +23,10 @@ class SceneManager {
 	private _canvas: HTMLCanvasElement;
 	private _canvas2: HTMLCanvasElement | null;
 	private _glContext: WebGLRenderingContext;
+	private _gizmosController: GizmosController;
 	private _sceneModel: SceneModel;
 	private _renderer: CubeRenderer;
-	private _pointRenderer: PointRenderer;
+	private _gizmosRenderer: GizmosRenderer | null = null;
 	private _sceneView: SceneView;
 	private _isRunning: boolean = false;
 	declare private _camera: Camera;
@@ -40,18 +42,18 @@ class SceneManager {
 
 		this._canvas.addEventListener('click', this._handleClick.bind(this));
 
+		this._gizmosController = new GizmosController();
+		this._gizmosController.on("gizmoCreated", this._onGizmoCreated.bind(this));
+
 		this._sceneModel = new SceneModel();
 		this._renderer = new CubeRenderer({ glContext: this._glContext });
-		this._pointRenderer = new PointRenderer({ glContext: this._glContext });
-		this._sceneView = new SceneView(this._sceneModel, this._renderer, this._pointRenderer, this._glContext);
+		this._sceneView = new SceneView(this._sceneModel, this._renderer, /*this._gizmosRenderer, */this._glContext);
 	}
 	
 	initialize(): void {
 		this._createCamera();
 		this._createGlobalLight();
 		this._createCubes();
-
-		this._createAxesPoints();
 	}
 
 	start(): void {
@@ -74,6 +76,10 @@ class SceneManager {
 		this._canvas.height = height;
 		this._sceneView.resize(width, height);
 	}
+
+	// getCanvas(): HTMLCanvasElement {
+	// 	return this._canvas;
+	// }
 
 	private _renderLoop(): void {
 		if (!this._isRunning) return;
@@ -119,15 +125,6 @@ class SceneManager {
 		}
 	}
 
-	private _createAxesPoints(): void {
-		const testPoints = [ vec3() ];
-		for (let i=1; i<10; i++) {
-			testPoints.push(vec3(12*i, 0, 0), vec3(0, 12*i, 0), vec3(0, 0, 12*i))
-		}
-		for (const point of testPoints)
-			this._pointRenderer.addPoint(point);
-	}
-
 	private _handleClick(event: MouseEvent): void {
         const rect = this._canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
@@ -135,12 +132,19 @@ class SceneManager {
 
         const pickedObject: MeshDrawable | null = this._sceneView.pickObject(x, y);
         if (pickedObject) {
-			const model = pickedObject.model as MeshModel;
-            alert(`Выбран объект на позиции: [${model.position.z / 5}, ${model.position.x / 5}]`);
+			this._gizmosController.activateFor(pickedObject);
         } else {
-			console.log('Empty!');
+			this._gizmosController.deactivate();
 		}
     }
+
+	private _onGizmoCreated(gizmosDrawable: GizmosDrawable): void {
+		if (!this._gizmosRenderer) {
+			this._gizmosRenderer = new GizmosRenderer({ glContext: this._glContext });
+			this._sceneView.addGizmosRenderer(this._gizmosRenderer);
+		}
+		this._sceneView.addGizmosDrawable(gizmosDrawable);
+	}
 }
 
 export default SceneManager;

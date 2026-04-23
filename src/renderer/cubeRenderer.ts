@@ -70,12 +70,12 @@ class CubeRenderer extends Renderer {
 
 		// Create vertex and index buffers
 		const vertexBuffer = new GLBuffer({ glContext: gl });
-		vertexBuffer.setData(geometryObj.getVertices().buffer);
 		this._cubeVertexBuffer = vertexBuffer.create();
+		vertexBuffer.setData(geometryObj.getVertices().buffer);
 
 		const indicesBuffer = new GLBuffer({ glContext: gl, type: gl.ELEMENT_ARRAY_BUFFER });
-		indicesBuffer.setData(geometryObj.getIndices().buffer);
 		this._indicesBuffer = indicesBuffer.create();
+		indicesBuffer.setData(geometryObj.getIndices().buffer);
 		this._indCount = geometryObj.getIndicesCount();
 
 		// Environment
